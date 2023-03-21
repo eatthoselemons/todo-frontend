@@ -5,7 +5,7 @@
 - add child tasks to existing tasks
 - View tasks in a kanban board view
 - order tasks/deprioritize them
-- text only editing, edit some sort of uml files? Don't want to have to create *in* a ui
+- text only editing, edit some sort of uml files? Don't want to have to create in a ui for desktop
 - push notifications
 
 # Ideas
