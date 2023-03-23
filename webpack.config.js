@@ -17,10 +17,10 @@ const config = {
     open: true,
     host: "localhost",
     port: 3000,
-    allowedHosts: 'all',
+    allowedHosts: "all",
     client: {
-      webSocketURL: 'auto://0.0.0.0/ws'
-    }
+      webSocketURL: "auto://0.0.0.0/ws",
+    },
   },
   plugins: [
     new HtmlWebpackPlugin({
