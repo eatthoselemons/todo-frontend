@@ -1,7 +1,6 @@
 import { Task, TaskID } from "../domain/Task";
-import * as PouchDB from "pouchdb";
+import PouchDB from "pouchdb";
 
-// @ts-ignore
 const db = new PouchDB<Task>("tasks");
 // Partial visibility based on what has been retrieved
 const childParentMap = new Map<TaskID, TaskID>();
@@ -51,5 +50,5 @@ export function deleteTask(id: TaskID) {
   // TODO recursively delete all children?
   // TODO Store task in undo stack, stack is erased on page unload
 
-  db.remove(id);
+  // db.remove(id);
 }
