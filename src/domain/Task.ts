@@ -9,11 +9,11 @@ export enum BaseStates {
 }
 
 export class Task {
-  public id: TaskID = uuidv4();
-  public subItems: Array<TaskID> = [];
+  public subTasks: Array<TaskID> = [];
 
   constructor(
     public text: string,
-    public state: string = BaseStates.UNSTARTED
+    public state: string = BaseStates.UNSTARTED,
+    public id: TaskID = uuidv4()
   ) {}
 }
