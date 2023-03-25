@@ -1,18 +1,26 @@
-import React, { createRef, FormEventHandler, useEffect, useState } from "react";
+import React, {
+  createRef,
+  FormEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { Box, Container, Fab, TextField, Typography } from "@mui/material";
 import TaskList from "./components/TaskList";
 import { Task } from "./domain/Task";
-import { createTask, getRootTasks } from "./service/TaskService";
 import AddIcon from "@mui/icons-material/Add";
+import TaskService from "./service/TaskService";
 
 function App() {
   const newItem = createRef<HTMLInputElement>();
 
   const [tasks, setTasks] = useState<Task[]>([]);
 
+  const { current: taskService } = useRef(TaskService.INSTANCE);
+
   useEffect(() => {
-    getRootTasks().then(setTasks);
+    taskService.getRootTasks().then(setTasks);
   }, []);
 
   const handleNewItem: FormEventHandler<HTMLFormElement> = (e) => {
@@ -22,7 +30,7 @@ function App() {
       setTasks([...tasks, newTask]);
       // TODO Handle async nature with spinner?
       // TODO handle adding tasks to non root
-      createTask("root", newTask);
+      taskService.createTask(newTask);
 
       newItem.current.value = "";
     }
