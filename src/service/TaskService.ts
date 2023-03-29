@@ -1,74 +1,103 @@
-import { Task, TaskID } from "../domain/Task";
+import { ITask, Task, TaskID } from "../domain/Task";
 import PouchDB from "pouchdb";
 
-export default class TaskService {
-  private db = new PouchDB<Task>("tasks");
-  // Partial visibility based on what has been retrieved
-  private childParentMap = new Map<TaskID, TaskID>();
+const db = new PouchDB<ITask>("tasks");
+// Partial visibility based on what task ids are known
+const childParentMap = new Map<TaskID, TaskID>();
 
-  public static INSTANCE = new TaskService();
+// Exported for testing but not in production
+export const _childParentMap =
+  process.env.NODE_ENV === "test" && childParentMap;
 
-  async ensureRoot() {
-    if ((await this.db.get("root")) === undefined) {
-      await this.db.put({ _id: "root", ...new Task("root") });
-    }
+async function ensureRoot() {
+  try {
+    await db.get("root");
+  } catch (ignore) {
+    await db.put({ _id: "root", ...new Task("root") });
+  }
+}
+
+function collectChildren(task: Task) {
+  task.subTaskIds.forEach((childId) => {
+    childParentMap.set(childId, task.id);
+  });
+}
+
+export async function getRootTasks(): Promise<Task[]> {
+  await ensureRoot();
+
+  const current = await db.get("root");
+
+  if (!current) {
+    return [];
   }
 
-  async getRootTasks(): Promise<Task[]> {
-    await this.ensureRoot();
-    return this.getSubTasks("root");
+  collectChildren(current);
+
+  return Promise.all(
+    current.subTaskIds.map(async (id: TaskID) => Task.from(await db.get(id)))
+  ).then((children: Task[]) => {
+    children.forEach((task) => collectChildren(task));
+    return children;
+  });
+}
+
+export async function getTaskById(id: TaskID): Promise<Task> {
+  const task = Task.from(await db.get(id));
+
+  collectChildren(task);
+
+  return task;
+}
+
+export async function createTask(task: Task, parentId: TaskID): Promise<void>;
+export async function createTask(
+  task: Task,
+  parentTask?: Readonly<Task>
+): Promise<void>;
+export async function createTask(
+  task: Task,
+  parentTaskOrId: TaskID | Readonly<Task> = "root"
+): Promise<void> {
+  await ensureRoot();
+
+  const isObj = typeof parentTaskOrId === "string";
+
+  let parent: Parameters<typeof db.put>[0] = isObj
+    ? await db.get(parentTaskOrId)
+    : await db.get(parentTaskOrId.id);
+
+  // update parent subtasks
+  parent.subTaskIds.push(task.id);
+  if (!isObj) {
+    parentTaskOrId.subTaskIds.push(task.id);
   }
+  await db.put(parent);
+  //store ancestry data
+  childParentMap.set(task.id, parent.id);
 
-  async getSubTasks(id: TaskID = "root"): Promise<Task[]> {
-    await this.ensureRoot();
+  // save new task
+  await db.put({ _id: task.id, ...task });
+}
 
-    const current = await this.db.get(id);
+export async function updateTask(task: Task): Promise<void> {
+  await db.put({ ...(await db.get(task.id)), ...task });
+}
 
-    if (!current) {
-      return [];
-    }
+export async function deleteTask(id: TaskID) {
+  console.assert(id !== "root");
 
-    return Promise.all(
-      current.subTasks.map((id: TaskID) => this.db.get(id))
-    ).then((children: Task[]) => {
-      children.forEach((it: Task) => this.childParentMap.set(it.id, id));
-      return children;
-    });
-  }
+  const currentTask = await db.get(id);
+  const parentTask = await db.get(childParentMap.get(id));
+  // delete children before deleting itself
+  await Promise.all(currentTask.subTaskIds.map((it) => deleteTask(it)));
+  // remove reference to itself after being deleted
+  await db.remove(currentTask);
 
-  async createTask(task: Task, parentID: TaskID = "root"): Promise<void> {
-    await this.ensureRoot();
+  childParentMap.delete(id);
+  parentTask.subTaskIds.splice(parentTask.subTaskIds.indexOf(id), 1);
 
-    // update parent subtasks
-    const parent = await this.db.get(parentID);
-    parent.subTasks.push(task.id);
-    await this.db.put(parent);
-    //store ancestry data
-    this.childParentMap.set(task.id, parent.id);
+  await db.put(parentTask);
 
-    // save new task
-    await this.db.put({ _id: task.id, ...task });
-  }
-
-  async updateTask(task: Task): Promise<void> {
-    await this.db.put({ _id: task.id, ...task });
-  }
-
-  async deleteTask(id: TaskID) {
-    console.assert(id !== "root");
-
-    const currentTask = await this.db.get(id);
-    const parentTask = await this.db.get(this.childParentMap.get(id));
-    // delete children before deleting itself
-    await Promise.all(currentTask.subTasks.map((it) => this.deleteTask(it)));
-    // remove reference to itself after being deleted
-    await this.db.remove(currentTask);
-
-    this.childParentMap.delete(id);
-    parentTask.subTasks.splice(parentTask.subTasks.indexOf(id), 1);
-
-    await this.db.put(parentTask);
-
-    // TODO Store task in undo stack, stack is erased on page unload
-  }
+  // TODO Store task in undo stack, stack is erased on page unload
 }

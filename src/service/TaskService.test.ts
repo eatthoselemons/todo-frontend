@@ -1,41 +1,72 @@
-import TaskService from "./TaskService";
 import { Task } from "../domain/Task";
+import {
+  _childParentMap,
+  createTask,
+  deleteTask,
+  getRootTasks,
+  getTaskById,
+  updateTask,
+} from "./TaskService";
+import PouchDB from "pouchdb";
 
 describe("TaskService", () => {
-  it("getRootTasks", async () => {
-    const taskService = new TaskService();
-    await taskService.createTask(new Task("getRootTasks"));
-    expect(taskService.getRootTasks()).toBe([new Task("getRootTasks")]);
+  afterAll(async () => {
+    try {
+      await new PouchDB("tasks").destroy();
+    } catch (e) {
+      console.error(e);
+    }
   });
 
-  it("getSubTasks", async () => {
-    const taskService = new TaskService();
-    await taskService.createTask(new Task("getSubTasks"));
-    expect(taskService.getRootTasks()).toBe([new Task("getSubTasks")]);
+  it("getRootTasks", async () => {
+    const task = new Task("getRootTasks");
+    await createTask(task);
+    expect(await getRootTasks()).toContainEqual(task);
+  });
+
+  it("getTaskById", async () => {
+    const rootTask = new Task("getTaskById-root");
+    await createTask(rootTask);
+    expect(await getTaskById(rootTask.id)).toEqual(rootTask);
+
+    const subTask = new Task("getTaskById-child");
+    await createTask(subTask, rootTask.id);
+    expect(await getTaskById(subTask.id)).toEqual(subTask);
   });
 
   it("createTask", async () => {
-    const taskService = new TaskService();
-    await taskService.createTask(new Task("createTask"));
-    expect(taskService.getRootTasks()).toBe([new Task("createTask")]);
+    const rootTask = new Task("createTask-root");
+    await createTask(rootTask);
+
+    const subTask = new Task("createTask-child");
+    await createTask(subTask, rootTask.id);
+    rootTask.subTaskIds.push(subTask.id);
+    expect(await getRootTasks()).toContainEqual(rootTask);
+    expect(await getTaskById(rootTask.subTaskIds[0])).toEqual(subTask);
+    expect(_childParentMap.get(subTask.id)).toBe(rootTask.id);
   });
 
   it("updateTask", async () => {
-    const taskService = new TaskService();
-    const task = new Task("updateTask");
-    await taskService.createTask(task);
-    expect(taskService.getRootTasks()).toBe([new Task("updateTask")]);
-    task.text = "updateTask 2";
-    await taskService.updateTask(task);
-    expect(taskService.getRootTasks()).toBe([new Task("updateTask 2")]);
+    const rootTask = new Task("updateTask-root");
+    await createTask(rootTask);
+
+    const subTask = new Task("updateTask-child");
+    await createTask(subTask, rootTask);
+    rootTask.subTaskIds.push(subTask.id);
+    expect(await getTaskById(rootTask.subTaskIds[0])).toEqual(subTask);
+    const dbSubTask = await getTaskById(subTask.id);
+    expect(dbSubTask).not.toBe(subTask); // Should not be the same object
+    expect(dbSubTask).toEqual(subTask); // But should be equal
+    subTask.text = "updateTask-updated";
+    await updateTask(subTask);
+    expect((await getTaskById(subTask.id)).text).toEqual("updateTask-updated");
   });
 
   it("deleteTask", async () => {
-    const taskService = new TaskService();
     const task = new Task("deleteTask");
-    await taskService.createTask(task);
-    expect(taskService.getRootTasks()).toBe([new Task("deleteTask")]);
-    await taskService.deleteTask(task.id);
-    expect(taskService.getRootTasks()).toBe([]);
+    await createTask(task);
+    expect(getRootTasks()).toBe([new Task("deleteTask")]);
+    await deleteTask(task.id);
+    expect(getRootTasks()).toBe([]);
   });
 });
