@@ -8,12 +8,22 @@ export enum BaseStates {
   FINISHED = "FINISHED",
 }
 
-export class Task {
-  public subTasks: Array<TaskID> = [];
+export interface ITask {
+  text: string;
+  state: string;
+  id: TaskID;
+  subTaskIds: Array<TaskID>;
+}
 
+export class Task {
   constructor(
     public text: string,
     public state: string = BaseStates.UNSTARTED,
-    public id: TaskID = uuidv4()
+    public readonly id: TaskID = uuidv4(),
+    public readonly subTaskIds: Array<TaskID> = []
   ) {}
+
+  static from<T extends Task>(obj: T): Task {
+    return new Task(obj.text, obj.state, obj.id, obj.subTaskIds);
+  }
 }

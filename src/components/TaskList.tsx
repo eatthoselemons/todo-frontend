@@ -10,7 +10,7 @@ interface TaskListProps {
 export const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   return tasks.length > 0 ? (
     <List>
-      {tasks.map((task, index) => (
+      {tasks.map((task) => (
         <TaskComponent task={task} key={task.id} />
       ))}
     </List>
