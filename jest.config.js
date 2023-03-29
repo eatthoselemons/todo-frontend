@@ -1,14 +1,8 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+/** @type {import('jest').Config} */
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
   moduleNameMapper: {
-    pouchdb: "pouchdb/lib/index.js",
-    uuid: "uuid/dist/index.js",
-  },
-  globals: {
-    "ts-jest": {
-      tsconfig: "tsconfig.jest.json",
-    },
+    uuid: "<rootDir>/node_modules/uuid/dist/index.js",
   },
 };

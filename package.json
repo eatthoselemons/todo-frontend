@@ -23,7 +23,8 @@
     "build:prod": "webpack --mode=production --node-env=production",
     "watch": "webpack --watch",
     "serve": "webpack serve",
-    "postinstall": "husky install"
+    "postinstall": "husky install",
+    "test": "jest"
   },
   "eslintConfig": {
     "extends": [
