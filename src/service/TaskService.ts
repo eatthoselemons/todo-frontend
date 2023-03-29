@@ -50,28 +50,23 @@ export async function getTaskById(id: TaskID): Promise<Task> {
   return task;
 }
 
-export async function createTask(task: Task, parentId: TaskID): Promise<void>;
 export async function createTask(
   task: Task,
-  parentTask?: Readonly<Task>
-): Promise<void>;
-export async function createTask(
-  task: Task,
-  parentTaskOrId: TaskID | Readonly<Task> = "root"
+  parentId: TaskID = "root"
 ): Promise<void> {
   await ensureRoot();
 
-  const isObj = typeof parentTaskOrId === "string";
+  if (task === null) {
+    throw new Error("No task to create");
+  }
+  if (childParentMap.get(task.id) === parentId) {
+    throw new Error("Task is already the child of another task");
+  }
 
-  let parent: Parameters<typeof db.put>[0] = isObj
-    ? await db.get(parentTaskOrId)
-    : await db.get(parentTaskOrId.id);
+  const parent = Task.from(await db.get(parentId));
 
   // update parent subtasks
   parent.subTaskIds.push(task.id);
-  if (!isObj) {
-    parentTaskOrId.subTaskIds.push(task.id);
-  }
   await db.put(parent);
   //store ancestry data
   childParentMap.set(task.id, parent.id);
@@ -81,6 +76,7 @@ export async function createTask(
 }
 
 export async function updateTask(task: Task): Promise<void> {
+  // TODO handle "rebase" where a child is moved to a different parent
   await db.put({ ...(await db.get(task.id)), ...task });
 }
 
