@@ -9,6 +9,5 @@
     "target": "esnext",
     "isolatedModules": true,
     "skipLibCheck": true
-  },
-  "files": ["src/index.tsx"]
+  }
 }
