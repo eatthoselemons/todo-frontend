@@ -6,6 +6,7 @@ import {
   getRootTasks,
   getTaskById,
   updateTask,
+  moveTask,
 } from "./TaskService";
 import PouchDB from "pouchdb";
 
@@ -89,6 +90,32 @@ describe("TaskService", () => {
 
   it("delete missing task", async () => {
     expect(() => deleteTask("missing")).toThrow();
+  });
+
+  it("move task", async () => {
+    const rootTask = new Task("moveTask-root");
+    await createTask(rootTask);
+
+    const subTask1 = new Task("moveTask-child1");
+    await createTestTask(subTask1, rootTask);
+
+    const subTask2 = new Task("moveTask-child1");
+    await createTestTask(subTask2, rootTask);
+
+    const moveTestTask = new Task("moveTask-moving");
+    await createTestTask(moveTestTask, subTask1);
+
+    expect((await getTaskById(subTask1.id)).subTaskIds).toContainEqual(
+      moveTestTask.id
+    );
+    expect(_childParentMap.get(moveTestTask.id)).toContainEqual(subTask1.id);
+
+    await moveTask(moveTestTask, subTask2);
+    // need to add not contain
+    expect((await getTaskById(subTask2.id)).subTaskIds).toContainEqual(
+      moveTestTask.id
+    );
+    expect(_childParentMap.get(moveTestTask.id)).toContainEqual(subTask2.id);
   });
 });
 

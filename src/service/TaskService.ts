@@ -75,6 +75,15 @@ export async function createTask(
   await db.put({ _id: task.id, ...task });
 }
 
+export async function moveTask(
+  childTask: Task,
+  parentTask: Task
+): Promise<void> {
+  parentTask.subTaskIds.push(childTask.id);
+  childParentMap.set(childTask.id, parentTask.id);
+  await updateTask(parentTask);
+}
+
 export async function updateTask(task: Task): Promise<void> {
   // TODO handle "rebase" where a child is moved to a different parent
   await db.put({ ...(await db.get(task.id)), ...task });

@@ -15,7 +15,7 @@ export interface ITask {
   subTaskIds: Array<TaskID>;
 }
 
-export class Task {
+export class Task implements ITask {
   constructor(
     public text: string,
     public state: string = BaseStates.UNSTARTED,
