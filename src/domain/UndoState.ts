@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { deleteTask } from "../service/TaskService";
 import { Task } from "./Task";
 
-export class UndoCreate extends UndoService {
+export class UndoState extends UndoService {
   constructor(
     public readonly task: Task,
     public type: string = UndoStates.CREATE
@@ -12,7 +12,7 @@ export class UndoCreate extends UndoService {
   }
 
   async undo(): Promise<Boolean> {
-    await deleteTask(this.task.id);
+    await this.task.id;
     return true;
   }
 }
