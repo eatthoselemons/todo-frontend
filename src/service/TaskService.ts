@@ -86,6 +86,7 @@ export async function moveTask(
 
 export async function updateTask(task: Task): Promise<void> {
   // TODO handle "rebase" where a child is moved to a different parent
+  // why not use getbyId here?
   await db.put({ ...(await db.get(task.id)), ...task });
 }
 
@@ -105,4 +106,13 @@ export async function deleteTask(id: TaskID) {
   await db.put(parentTask);
 
   // TODO Store task in undo stack, stack is erased on page unload
+}
+
+export async function taskStateChange(
+  id: TaskID,
+  state: string
+): Promise<void> {
+  const tempTask: Task = await db.get(id);
+  tempTask.state = state;
+  db.put(tempTask);
 }

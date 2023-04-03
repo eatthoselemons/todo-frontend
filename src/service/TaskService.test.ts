@@ -1,4 +1,4 @@
-import { Task } from "../domain/Task";
+import { BaseStates, Task } from "../domain/Task";
 import {
   _childParentMap,
   createTask,
@@ -7,6 +7,7 @@ import {
   getTaskById,
   updateTask,
   moveTask,
+  taskStateChange,
 } from "./TaskService";
 import PouchDB from "pouchdb";
 
@@ -116,6 +117,18 @@ describe("TaskService", () => {
       moveTestTask.id
     );
     expect(_childParentMap.get(moveTestTask.id)).toContainEqual(subTask2.id);
+  });
+
+  it("updateState", async () => {
+    const rootTask = new Task("updateState-root");
+    await createTask(rootTask);
+
+    const subTask1 = new Task("updateState-child1");
+    await createTestTask(subTask1, rootTask);
+
+    expect((await getTaskById(subTask1.id)).state).toBe(BaseStates.UNSTARTED);
+    await taskStateChange(subTask1.id, BaseStates.STARTED);
+    expect((await getTaskById(subTask1.id)).state).toBe(BaseStates.STARTED);
   });
 });
 
