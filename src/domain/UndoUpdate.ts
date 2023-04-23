@@ -1,5 +1,3 @@
-import { UndoService, TaskID, UndoStates } from "./UndoService";
-import { v4 as uuidv4 } from "uuid";
 import {
   createTask,
   deleteTask,
@@ -7,12 +5,13 @@ import {
   updateTask,
 } from "../service/TaskService";
 import { BaseStates, Task } from "./Task";
+import { Undo, UndoStates } from "./Undo";
 
-export class UndoUpdate extends UndoService {
+export class UndoUpdate extends Undo {
   constructor(
     public readonly task: Task,
 
-    public type: string = UndoStates.ATTRIBUTECHANGE
+    public type: UndoStates = UndoStates.ATTRIBUTECHANGE
   ) {
     super(type, task);
   }
