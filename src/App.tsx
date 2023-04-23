@@ -1,22 +1,67 @@
-import React from "react";
-
-import { Container, Typography } from "@mui/material";
-
-import TaskComponent from "./components/TaskComponent";
+import React, { useState } from "react";
+import {
+  Box,
+  Card,
+  CardActionArea,
+  CardContent,
+  CardHeader,
+  Container,
+  IconButton,
+  Modal,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Add, Delete } from "@mui/icons-material";
+import TaskList from "./components/TaskList";
+import { AddTaskModal } from "./components/AddTaskModal";
 
 function App() {
+  const [showAddModal, setShowAddModal] = useState(false);
   return (
-    <Container
-      sx={{
-        position: "relative",
-        minHeight: "100vh",
-      }}
-    >
-      <header>
+    <Container>
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h3">Liz'z Lemons</Typography>
-      </header>
+        <Box
+          sx={{
+            display: "flex",
+            flex: "1 0 auto",
+            justifyContent: "space-between",
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              marginLeft: "auto",
+            }}
+          >
+            <IconButton aria-label="delete" size="large">
+              <Delete fontSize="inherit" color="error" />
+            </IconButton>
+            <IconButton
+              aria-label="add"
+              size="large"
+              onClick={() => setShowAddModal(true)}
+            >
+              <Add fontSize="inherit" />
+            </IconButton>
+            {/*TODO change state*/}
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Content */}
       <main>
-        <TaskComponent taskID="root" />
+        <TaskList taskIDs={["root"]} />
       </main>
       {/* Modal */}
       <AddTaskModal
