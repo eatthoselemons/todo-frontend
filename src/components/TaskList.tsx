@@ -1,17 +1,17 @@
 import * as React from "react";
 import { List } from "@mui/material";
 import TaskComponent from "./TaskComponent";
-import { Task } from "../domain/Task";
+import { TaskID } from "../domain/Task";
 
 interface TaskListProps {
-  tasks: Task[];
+  taskIDs: TaskID[];
 }
 
-export const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
-  return tasks.length > 0 ? (
+const TaskList: React.FC<TaskListProps> = ({ taskIDs }) => {
+  return taskIDs.length > 0 ? (
     <List>
-      {tasks.map((task) => (
-        <TaskComponent task={task} key={task.id} />
+      {taskIDs.map((taskID) => (
+        <TaskComponent taskID={taskID} key={taskID} />
       ))}
     </List>
   ) : null;

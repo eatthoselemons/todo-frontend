@@ -12,7 +12,7 @@ import { Delete, MoreVert } from "@mui/icons-material";
 import * as React from "react";
 import { Task, TaskID } from "../domain/Task";
 import { createRef, FormEventHandler, useEffect, useState } from "react";
-import { createTask, getRootTasks } from "../service/TaskService";
+import { createTask, getRootTasks, getTaskById } from "../service/TaskService";
 
 interface TaskProps {
   taskID?: TaskID;
@@ -23,31 +23,34 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   const [subTasksOpen, setSubTasksOpen] = useState<boolean>(false);
   const [actionsOpen, setActionsOpen] = useState<boolean>(false);
 
-  const [text, setText] = useState<string>();
-  const [state, setState] = useState<string>();
-  const [subTaskIds, setSubTaskIds] = useState<TaskID[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [task, setTask] = useState<Task | undefined>();
 
   const newItem = createRef<HTMLInputElement>();
 
   useEffect(() => {
-    if (!taskID) {
-      // TODO we don't need the whole task from root tasks, just the ids
-      // FIXME getRootTasks().then(setSubTasks);
+    if (!loading) {
+      return;
     }
-  }, []);
 
-  const handleNewItem: FormEventHandler<HTMLFormElement> = (e) => {
-    e.preventDefault();
-    if (newItem.current?.value) {
-      const newTask = new Task(newItem.current.value);
-      setSubTaskIds([...subTaskIds, newTask.id]);
-      // TODO Handle async nature with spinner?
-      // TODO handle adding tasks to non root
-      createTask(newTask);
+    (async () => {
+      setTask(await getTaskById(taskID));
+      setLoading(false);
+    })();
+  }, [taskID, loading]);
 
-      newItem.current.value = "";
-    }
-  };
+  // const handleNewItem: FormEventHandler<HTMLFormElement> = (e) => {
+  //   e.preventDefault();
+  //   if (newItem.current?.value) {
+  //     const newTask = new Task(newItem.current.value);
+  //     setSubTaskIds([...subTaskIds, newTask.id]);
+  //     // TODO Handle async nature with spinner?
+  //     // TODO handle adding tasks to non root
+  //     createTask(newTask);
+  //
+  //     newItem.current.value = "";
+  //   }
+  // };
 
   return (
     <>
@@ -67,7 +70,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
           // onMouseDown={}
           // onTouchStart={}
         >
-          {text}
+          {task?.text}
         </ListItemText>
       </ListItem>
       <Collapse in={subTasksOpen}>{/*TODO subtasks*/}</Collapse>
