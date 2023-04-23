@@ -18,6 +18,12 @@ function App() {
       <main>
         <TaskComponent taskID="root" />
       </main>
+      {/* Modal */}
+      <AddTaskModal
+        taskId="root"
+        showAddModal={showAddModal}
+        setShowAddModal={setShowAddModal}
+      />
     </Container>
   );
 }
