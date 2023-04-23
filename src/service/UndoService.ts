@@ -1,31 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
-import { UndoMove } from "./UndoMove";
-import { Task } from "./Task";
-import { UndoCreate } from "./UndoCreate";
-import { UndoDelete } from "./UndoDelete";
-import { UndoUpdate } from "./UndoUpdate";
-import { UndoState } from "./UndoState";
+import { UndoMove } from "../domain/UndoMove";
+import { Task } from "../domain/Task";
+import { UndoCreate } from "../domain/UndoCreate";
+import { UndoDelete } from "../domain/UndoDelete";
+import { UndoUpdate } from "../domain/UndoUpdate";
+import { UndoState } from "../domain/UndoState";
+import { Undo, UndoStates } from "../domain/Undo";
 
-export type TaskID = ReturnType<typeof uuidv4>;
+type TaskID = ReturnType<typeof uuidv4>;
 
-export enum UndoStates {
-  CREATE = "CREATED",
-  DELETE = "DELETED",
-  MOVE = "MOVED",
-  STATECHANGE = "CHANGEDSTATE",
-  ATTRIBUTECHANGE = "ATTRIBUTECHANGED",
-}
-
-export interface IUndo {
-  type: string;
-  task: Task;
-}
-export class UndoService implements IUndo {
-  constructor(
-    public type: string,
-    public task: Task,
-    private readonly undoList: Array<UndoService> = []
-  ) {}
+export class UndoService {
+  constructor(private readonly undoList: Array<Undo> = []) {}
 
   async undoItem(): Promise<Boolean> {
     const current: UndoService = this.undoList.shift();
