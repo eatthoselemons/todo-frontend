@@ -13,13 +13,8 @@ export class UndoService {
   constructor(private readonly undoList: Array<Undo> = []) {}
 
   async undoItem(): Promise<Boolean> {
-    const current: UndoService = this.undoList.shift();
+    const current: Undo = this.undoList.shift();
     return await current.undo();
-  }
-
-  async undo(): Promise<Boolean> {
-    console.log("well, your mom"); // got'em
-    return true;
   }
 
   async addUndoItem(
@@ -34,7 +29,7 @@ export class UndoService {
       task.subTaskIds
     );
 
-    let item: UndoService;
+    let item: Undo;
 
     switch (type) {
       case UndoStates.MOVE: {
