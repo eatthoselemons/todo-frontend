@@ -13,6 +13,7 @@ import * as React from "react";
 import { Task, TaskID } from "../domain/Task";
 import { createRef, FormEventHandler, useEffect, useState } from "react";
 import { createTask, getRootTasks, getTaskById } from "../service/TaskService";
+import TaskList from "./TaskList";
 
 interface TaskProps {
   taskID?: TaskID;
@@ -73,7 +74,9 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
           {task?.text}
         </ListItemText>
       </ListItem>
-      <Collapse in={subTasksOpen}>{/*TODO subtasks*/}</Collapse>
+      <Collapse in={subTasksOpen}>
+        <TaskList taskIDs={task?.subTaskIds ?? []} />
+      </Collapse>
       <Popover
         open={actionsOpen}
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
