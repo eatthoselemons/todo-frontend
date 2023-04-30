@@ -8,6 +8,7 @@
     "noImplicitAny": true,
     "target": "esnext",
     "isolatedModules": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "sourceMap": true
   }
 }
