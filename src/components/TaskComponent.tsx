@@ -1,19 +1,21 @@
 import {
+  Box,
   Checkbox,
   Collapse,
   IconButton,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
   Popover,
 } from "@mui/material";
-import { Delete, MoreVert } from "@mui/icons-material";
+import { Add, Delete, MoreVert } from "@mui/icons-material";
 import * as React from "react";
 import { Task, TaskID } from "../domain/Task";
-import { createRef, FormEventHandler, useEffect, useState } from "react";
-import { createTask, getRootTasks, getTaskById } from "../service/TaskService";
+import { createRef, useContext, useEffect, useState } from "react";
+import { getTaskById } from "../service/TaskService";
 import TaskList from "./TaskList";
+import { DepthContext, DepthContextProvider } from "../context/DepthContext";
+import { CheckboxContext } from "../context/CheckboxContext";
 
 interface TaskProps {
   taskID?: TaskID;
@@ -26,6 +28,9 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
 
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState<Task | undefined>();
+
+  const { checkedItems, setCheckedItems } = useContext(CheckboxContext);
+  const { depth } = useContext(DepthContext);
 
   const newItem = createRef<HTMLInputElement>();
 
@@ -53,41 +58,72 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   //   }
   // };
 
+  useEffect(() => {
+    // TODO get a global depth setting as a filter
+    if (depth <= 3) {
+      setVisible(true);
+    }
+  }, [depth, setVisible]);
+
   return (
-    <>
-      <ListItem
-        key={taskID}
-        secondaryAction={
-          // TODO Next state button (quick access)
-          <IconButton edge="end" aria-label="actions">
-            <MoreVert id={`${taskID}-actions-button`} />
-          </IconButton>
-        }
-      >
-        <ListItemIcon></ListItemIcon>
-        <ListItemText
-          id={`${taskID}-text`}
-          // TODO rename (edit mode?)
-          // onMouseDown={}
-          // onTouchStart={}
+    visible && (
+      <DepthContextProvider>
+        <Checkbox
+          checked={checkedItems[taskID] ?? false}
+          onChange={(e) => {
+            setCheckedItems({ ...checkedItems, [taskID]: e.target.checked });
+          }}
+        ></Checkbox>
+        <ListItem
+          key={taskID}
+          secondaryAction={
+            // TODO Next state button (quick access)
+            <IconButton edge="end" aria-label="actions">
+              <MoreVert id={`${taskID}-actions-button`} />
+            </IconButton>
+          }
         >
-          {task?.text}
-        </ListItemText>
-      </ListItem>
-      <Collapse in={subTasksOpen}>
-        <TaskList taskIDs={task?.subTaskIds ?? []} />
-      </Collapse>
-      <Popover
-        open={actionsOpen}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      >
-        {/*TODO Actions list*/}
-        {/*TODO delete*/}
-        {/*TODO add*/}
-        {/*TODO change state*/}
-        {/*TODO rename*/}
-      </Popover>
-    </>
+          <ListItemIcon></ListItemIcon>
+          <ListItemText
+            id={`${taskID}-text`}
+            // TODO rename (edit mode?)
+            // onMouseDown={}
+            // onTouchStart={}
+          >
+            {task?.text}
+          </ListItemText>
+        </ListItem>
+        <Collapse in={subTasksOpen}>
+          <TaskList taskIDs={task?.subTaskIds ?? []} />
+        </Collapse>
+        {/*{<Box sx={{ visible: isEditMode(interfaceMode) }}>*/}
+
+        {/*{isEditMode(interfaceMode) && (*/}
+        {/*  <Box>*/}
+        {/*    <IconButton aria-label="delete" size="large">*/}
+        {/*      <Delete fontSize="inherit" color="error" />*/}
+        {/*    </IconButton>*/}
+        {/*    <IconButton*/}
+        {/*      aria-label="add"*/}
+        {/*      size="large"*/}
+        {/*      onClick={() => setShowAddModal(true)}*/}
+        {/*    >*/}
+        {/*      <Add fontSize="inherit" />*/}
+        {/*    </IconButton>*/}
+        {/*  </Box>*/}
+        {/*)}*/}
+        <Popover
+          open={actionsOpen}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        >
+          {/*TODO Actions list*/}
+          {/*TODO delete*/}
+          {/*TODO add*/}
+          {/*TODO change state*/}
+          {/*TODO rename*/}
+        </Popover>
+      </DepthContextProvider>
+    )
   );
 };
 
