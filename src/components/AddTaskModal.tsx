@@ -1,38 +1,93 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, Modal, TextField } from "@mui/material";
-import { TaskID } from "../domain/Task";
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  Modal,
+  TextField,
+} from "@mui/material";
+import { Task, TaskID } from "../domain/Task";
+import { createTask } from "../service/TaskService";
 
 interface AddTaskModalProps {
   showAddModal: boolean;
   setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
   taskId: TaskID;
+  onClose?: () => {};
 }
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   showAddModal,
   setShowAddModal,
   taskId,
+  onClose,
 }) => {
   const [newTaskName, setTaskName] = useState("");
   const [hasTaskNameError, setHasTaskNameError] = useState(false);
   const [taskNameError, setTaskNameError] = useState<string | undefined>();
 
+  const close = () => {
+    onClose?.();
+    setShowAddModal(false);
+  };
+
+  const submit = () => {
+    (async () => {
+      try {
+        await createTask(new Task(newTaskName), taskId);
+      } catch (e) {
+        // TODO handle errors
+        return;
+      }
+      setTaskName("");
+      close();
+    })();
+  };
+
   return (
-    <Modal open={showAddModal} onClose={() => setShowAddModal(false)}>
-      <Card sx={{ maxWidth: 500 }}>
-        <CardHeader title="Add New Todo" />
-        <CardContent>
-          <TextField
-            required
-            label="Task Name"
-            variant="filled"
-            title="Name of Task"
-            fullWidth
-            error={hasTaskNameError}
-            value={newTaskName}
-          />
-        </CardContent>
-      </Card>
+    <Modal open={showAddModal} onClose={close}>
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <Card sx={{ maxWidth: 500, margin: "auto", marginTop: "25vh" }}>
+          <CardHeader title="Add New Todo" />
+          <CardContent>
+            <TextField
+              required
+              label="Task Name"
+              variant="filled"
+              title="Name of Task"
+              fullWidth
+              error={hasTaskNameError}
+              value={newTaskName}
+              onChange={(e) => setTaskName(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  !e.metaKey &&
+                  !e.ctrlKey &&
+                  !e.shiftKey &&
+                  !e.altKey
+                ) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+            />
+          </CardContent>
+          <CardActions>
+            <Button variant="contained" onClick={submit}>
+              Create
+            </Button>
+          </CardActions>
+        </Card>
+      </Box>
     </Modal>
   );
 };
