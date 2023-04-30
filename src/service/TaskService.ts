@@ -13,7 +13,7 @@ async function ensureRoot() {
   try {
     await db.get("root");
   } catch (ignore) {
-    await db.put({ _id: "root", ...new Task("root") });
+    await db.put({ _id: "root", ...new Task("root"), id: "root" });
   }
 }
 
@@ -21,6 +21,41 @@ function collectChildren(task: Task) {
   task.subTaskIds.forEach((childId) => {
     childParentMap.set(childId, task.id);
   });
+}
+
+export function watchTaskForChanges(
+  taskId: TaskID,
+  onChange: (task: Task) => void
+): () => void {
+  const changes = db
+    .changes({
+      since: "now",
+      live: true,
+      filter: (doc) => doc._id === taskId,
+    })
+    .on("change", (_) => {
+      db.get(taskId).then((task) => {
+        onChange(Task.from(task));
+      });
+    });
+
+  return () => {
+    changes.cancel();
+  };
+}
+
+export async function getRootTaskIds(): Promise<TaskID[]> {
+  await ensureRoot();
+
+  const current = await db.get("root");
+
+  if (!current) {
+    return [];
+  }
+
+  collectChildren(current);
+
+  return current.subTaskIds;
 }
 
 export async function getRootTasks(): Promise<Task[]> {
@@ -63,11 +98,11 @@ export async function createTask(
     throw new Error("Task is already the child of another task");
   }
 
-  const parent = Task.from(await db.get(parentId));
+  const parent = await db.get(parentId);
 
   // update parent subtasks
   parent.subTaskIds.push(task.id);
-  await db.put(parent);
+  await db.put({ _id: parentId, ...parent });
   //store ancestry data
   childParentMap.set(task.id, parent.id);
 
@@ -106,6 +141,10 @@ export async function deleteTask(id: TaskID) {
   await db.put(parentTask);
 
   // TODO Store task in undo stack, stack is erased on page unload
+}
+
+export async function deleteTasks(taskIds: Array<TaskID>) {
+  await Promise.all(taskIds.map((key) => deleteTask(key)));
 }
 
 export async function taskStateChange(
