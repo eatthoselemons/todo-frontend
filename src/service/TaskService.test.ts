@@ -126,7 +126,7 @@ describe("TaskService", () => {
     const subTask1 = new Task("updateState-child1");
     await createTestTask(subTask1, rootTask);
 
-    expect((await getTaskById(subTask1.id)).state).toBe(BaseStates.UNSTARTED);
+    expect((await getTaskById(subTask1.id)).state).toBe(BaseStates.CREATED);
     await taskStateChange(subTask1.id, BaseStates.STARTED);
     expect((await getTaskById(subTask1.id)).state).toBe(BaseStates.STARTED);
   });
