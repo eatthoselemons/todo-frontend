@@ -3,9 +3,14 @@ import { v4 as uuidv4 } from "uuid";
 export type TaskID = ReturnType<typeof uuidv4>;
 
 export enum BaseStates {
-  UNSTARTED = "UNSTARTED",
+  CREATED = "CREATED",
   STARTED = "STARTED",
   FINISHED = "FINISHED",
+}
+
+export interface Transition {
+  time: number;
+  newState: string;
 }
 
 export interface ITask {
@@ -13,14 +18,16 @@ export interface ITask {
   state: string;
   id: TaskID;
   subTaskIds: Array<TaskID>;
+  changeLog: Array<Transition>;
 }
 
 export class Task implements ITask {
   constructor(
     public text: string,
-    public state: string = BaseStates.UNSTARTED,
+    public state: string = BaseStates.CREATED,
     public readonly id: TaskID = uuidv4(),
-    public readonly subTaskIds: Array<TaskID> = []
+    public readonly subTaskIds: Array<TaskID> = [],
+    public changeLog: Array<Transition> = []
   ) {}
 
   static from<T extends Task>(obj: T): Task {
