@@ -3,9 +3,29 @@ import { Box, Container, IconButton, Stack, Typography } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
 import TaskList from "./components/TaskList";
 import { AddTaskModal } from "./components/AddTaskModal";
+import { deleteTask, deleteTasks, getRootTaskIds } from "./service/TaskService";
+import { Task, TaskID } from "./domain/Task";
+import { useTaskWatcher } from "./hooks/useTaskWatcher";
+import {
+  CheckboxContext,
+  CheckboxContextProvider,
+} from "./context/CheckboxContext";
 
-function App() {
+const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [taskIds, setTaskIds] = useState<TaskID[]>([]);
+  const { checkedItems, setCheckedItems } = useContext(CheckboxContext);
+
+  useEffect(() => {
+    getRootTaskIds().then(setTaskIds);
+  }, []);
+
+  const onRootTaskChange = useCallback((task: Task) => {
+    setTaskIds(task.subTaskIds);
+  }, []);
+
+  useTaskWatcher("root", onRootTaskChange);
+
   return (
     <Container>
       {/* Header */}
@@ -32,7 +52,15 @@ function App() {
               marginLeft: "auto",
             }}
           >
-            <IconButton aria-label="delete" size="large">
+            <IconButton
+              aria-label="delete"
+              size="large"
+              onClick={() => {
+                Promise.resolve(
+                  Object.keys(checkedItems).filter((id) => checkedItems[id])
+                ).then(deleteTasks);
+              }}
+            >
               <Delete fontSize="inherit" color="error" />
             </IconButton>
             <IconButton
@@ -49,7 +77,9 @@ function App() {
 
       {/* Content */}
       <main>
-        <TaskList taskIDs={["root"]} />
+        <CheckboxContextProvider>
+          <TaskList taskIDs={taskIds} />
+        </CheckboxContextProvider>
       </main>
       {/* Modal */}
       <AddTaskModal
@@ -59,6 +89,6 @@ function App() {
       />
     </Container>
   );
-}
+};
 
 export default App;
