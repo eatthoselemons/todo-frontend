@@ -17,7 +17,7 @@ export class UndoMove extends Undo {
     super(type, task);
   }
 
-  async undo(): Promise<Boolean> {
+  async undo(): Promise<boolean> {
     await moveTask(
       await getTaskById(this.task.id),
       await getTaskById(this.oldParentId)
