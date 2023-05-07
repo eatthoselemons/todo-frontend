@@ -4,9 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
-/dist/main.js
-/dist/main.js.LICENSE.txt
-/dist/service-worker.js
+/dist/
 
 # testing
 /coverage
