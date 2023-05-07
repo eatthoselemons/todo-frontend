@@ -4,6 +4,7 @@ import {
   Collapse,
   IconButton,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Popover,
@@ -11,7 +12,13 @@ import {
 import { Add, Delete, MoreVert } from "@mui/icons-material";
 import * as React from "react";
 import { Task, TaskID } from "../domain/Task";
-import { createRef, useContext, useEffect, useState } from "react";
+import {
+  createRef,
+  MouseEventHandler,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { getTaskById } from "../service/TaskService";
 import TaskList from "./TaskList";
 import { DepthContext, DepthContextProvider } from "../context/DepthContext";
@@ -65,15 +72,13 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
     }
   }, [depth, setVisible]);
 
+  const handleItemClick: MouseEventHandler = (e) => {
+    task.state;
+  };
+
   return (
     visible && (
       <DepthContextProvider>
-        <Checkbox
-          checked={checkedItems[taskID] ?? false}
-          onChange={(e) => {
-            setCheckedItems({ ...checkedItems, [taskID]: e.target.checked });
-          }}
-        ></Checkbox>
         <ListItem
           key={taskID}
           secondaryAction={
@@ -83,45 +88,47 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
             </IconButton>
           }
         >
-          <ListItemIcon></ListItemIcon>
-          <ListItemText
-            id={`${taskID}-text`}
-            // TODO rename (edit mode?)
-            // onMouseDown={}
-            // onTouchStart={}
-          >
-            {task?.text}
-          </ListItemText>
-        </ListItem>
-        <Collapse in={subTasksOpen}>
-          <TaskList taskIDs={task?.subTaskIds ?? []} />
-        </Collapse>
-        {/*{<Box sx={{ visible: isEditMode(interfaceMode) }}>*/}
+          <ListItemButton onClick={handleItemClick}>
+            <ListItemIcon>
+              <Checkbox
+                checked={checkedItems[taskID] ?? false}
+                onChange={(e) => {
+                  setCheckedItems({
+                    ...checkedItems,
+                    [taskID]: e.target.checked,
+                  });
+                }}
+              />
+            </ListItemIcon>
+            <ListItemText
+              id={`${taskID}-text`}
+              // TODO rename (edit mode?)
+              // onMouseDown={}
+              // onTouchStart={}
+            >
+              {task?.text}
+            </ListItemText>
+          </ListItemButton>
 
-        {/*{isEditMode(interfaceMode) && (*/}
-        {/*  <Box>*/}
-        {/*    <IconButton aria-label="delete" size="large">*/}
-        {/*      <Delete fontSize="inherit" color="error" />*/}
-        {/*    </IconButton>*/}
-        {/*    <IconButton*/}
-        {/*      aria-label="add"*/}
-        {/*      size="large"*/}
-        {/*      onClick={() => setShowAddModal(true)}*/}
-        {/*    >*/}
-        {/*      <Add fontSize="inherit" />*/}
-        {/*    </IconButton>*/}
-        {/*  </Box>*/}
-        {/*)}*/}
-        <Popover
-          open={actionsOpen}
-          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        >
-          {/*TODO Actions list*/}
-          {/*TODO delete*/}
-          {/*TODO add*/}
-          {/*TODO change state*/}
-          {/*TODO rename*/}
-        </Popover>
+          {/* Sub tasks */}
+
+          <Collapse in={subTasksOpen}>
+            <TaskList taskIDs={task?.subTaskIds ?? []} />
+          </Collapse>
+
+          {/* Context menu */}
+
+          <Popover
+            open={actionsOpen}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          >
+            {/*TODO Actions list*/}
+            {/*TODO delete*/}
+            {/*TODO add*/}
+            {/*TODO change state*/}
+            {/*TODO rename*/}
+          </Popover>
+        </ListItem>
       </DepthContextProvider>
     )
   );

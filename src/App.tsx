@@ -14,7 +14,7 @@ import {
 const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
-  const { checkedItems, setCheckedItems } = useContext(CheckboxContext);
+  const { checkedItems } = useContext(CheckboxContext);
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);
@@ -23,6 +23,12 @@ const App: React.FC = () => {
   const onRootTaskChange = useCallback((task: Task) => {
     setTaskIds(task.subTaskIds);
   }, []);
+
+  const deleteSelectedTasks = useCallback(() => {
+    Promise.resolve(
+      Object.keys(checkedItems).filter((id) => checkedItems[id])
+    ).then(deleteTasks);
+  }, [checkedItems]);
 
   useTaskWatcher("root", onRootTaskChange);
 
@@ -55,11 +61,7 @@ const App: React.FC = () => {
             <IconButton
               aria-label="delete"
               size="large"
-              onClick={() => {
-                Promise.resolve(
-                  Object.keys(checkedItems).filter((id) => checkedItems[id])
-                ).then(deleteTasks);
-              }}
+              onClick={deleteSelectedTasks}
             >
               <Delete fontSize="inherit" color="error" />
             </IconButton>
@@ -77,9 +79,7 @@ const App: React.FC = () => {
 
       {/* Content */}
       <main>
-        <CheckboxContextProvider>
-          <TaskList taskIDs={taskIds} />
-        </CheckboxContextProvider>
+        <TaskList taskIDs={taskIds} />
       </main>
       {/* Modal */}
       <AddTaskModal
