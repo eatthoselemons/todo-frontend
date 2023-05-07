@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { CheckboxContextProvider } from "./context/CheckboxContext";
+import { TaskContextProvider } from "./context/TaskContext";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -10,7 +11,9 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <CheckboxContextProvider>
-      <App />
+      <TaskContextProvider>
+        <App />
+      </TaskContextProvider>
     </CheckboxContextProvider>
   </React.StrictMode>
 );
