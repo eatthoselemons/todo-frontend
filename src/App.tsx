@@ -3,18 +3,20 @@ import { Box, Container, IconButton, Stack, Typography } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
 import TaskList from "./components/TaskList";
 import { AddTaskModal } from "./components/AddTaskModal";
-import { deleteTask, deleteTasks, getRootTaskIds } from "./service/TaskService";
 import { Task, TaskID } from "./domain/Task";
 import { useTaskWatcher } from "./hooks/useTaskWatcher";
 import {
   CheckboxContext,
   CheckboxContextProvider,
 } from "./context/CheckboxContext";
+import useTaskHooks from "./hooks/useTaskHooks";
 
 const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
   const { checkedItems } = useContext(CheckboxContext);
+
+  const { getRootTaskIds, deleteTasks } = useTaskHooks();
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);

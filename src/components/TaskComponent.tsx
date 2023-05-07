@@ -19,10 +19,12 @@ import {
   useEffect,
   useState,
 } from "react";
-import { getTaskById } from "../service/TaskService";
 import TaskList from "./TaskList";
 import { DepthContext, DepthContextProvider } from "../context/DepthContext";
 import { CheckboxContext } from "../context/CheckboxContext";
+import EventBarrier from "./util/EventBarrier";
+import { TaskContext } from "../context/TaskContext";
+import useTaskHooks from "../hooks/useTaskHooks";
 
 interface TaskProps {
   taskID?: TaskID;
@@ -40,6 +42,8 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   const { depth } = useContext(DepthContext);
 
   const newItem = createRef<HTMLInputElement>();
+
+  const { getTaskById, updateTask } = useTaskHooks();
 
   useEffect(() => {
     if (!loading) {
@@ -74,6 +78,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
 
   const handleItemClick: MouseEventHandler = (e) => {
     task.state;
+    updateTask(task);
   };
 
   return (
@@ -90,15 +95,17 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
         >
           <ListItemButton onClick={handleItemClick}>
             <ListItemIcon>
-              <Checkbox
-                checked={checkedItems[taskID] ?? false}
-                onChange={(e) => {
-                  setCheckedItems({
-                    ...checkedItems,
-                    [taskID]: e.target.checked,
-                  });
-                }}
-              />
+              <EventBarrier>
+                <Checkbox
+                  checked={checkedItems[taskID] ?? false}
+                  onChange={(e) => {
+                    setCheckedItems({
+                      ...checkedItems,
+                      [taskID]: e.target.checked,
+                    });
+                  }}
+                />
+              </EventBarrier>
             </ListItemIcon>
             <ListItemText
               id={`${taskID}-text`}

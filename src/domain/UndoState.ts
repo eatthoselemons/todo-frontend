@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
-import { deleteTask } from "../service/TaskService";
 import { Task } from "./Task";
 import { Undo, UndoStates } from "./Undo";
 
