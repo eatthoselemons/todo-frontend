@@ -1,4 +1,4 @@
-import { Task, TaskID } from "../domain/Task";
+import { BaseState, ITask, Task, TaskID } from "../domain/Task";
 import { useContext, useMemo } from "react";
 import { TaskContext } from "../context/TaskContext";
 
@@ -50,7 +50,7 @@ const useTaskHooks = () => {
         return [];
       }
 
-      collectChildren(current);
+      collectChildren(Task.from(current));
 
       return current.subTaskIds;
     }
@@ -64,7 +64,7 @@ const useTaskHooks = () => {
         return [];
       }
 
-      collectChildren(current);
+      collectChildren(Task.from(current));
 
       return Promise.all(
         current.subTaskIds.map(async (id: TaskID) =>
@@ -144,8 +144,9 @@ const useTaskHooks = () => {
     }
 
     async function taskStateChange(id: TaskID, state: string): Promise<void> {
-      const tempTask: Task = await db.get(id);
-      tempTask.state = state;
+      const tempTask: ITask = await db.get(id);
+      // @ts-ignore
+      tempTask.internalState = BaseState[state];
       db.put(tempTask);
     }
 
