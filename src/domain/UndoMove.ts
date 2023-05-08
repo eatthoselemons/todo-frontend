@@ -1,4 +1,4 @@
-import { BaseStates, Task, TaskID } from "./Task";
+import { BaseState, Task, TaskID } from "./Task";
 import { Undo, UndoStates } from "./Undo";
 
 export class UndoMove extends Undo {
