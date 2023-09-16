@@ -9,13 +9,15 @@
 - push notifications
 
 # Ideas
+
 - ideas -> tasks pipeline?
 - notify partners when completed more than x number?
 - github like activity diagram?
 - voice assistant intergration for adding tasks?
 - medication reminders?
-- 
-
+- send tasks to bottom when complete?
+- add response section for notes about a completed task (for medical question items)
+-
 
 # User Activities
 
@@ -26,8 +28,6 @@
 * Set task schedule (repeatable, select days, etc)
 * Push notifications 💲💲💲💲💲💲💲💲
 * Different pages (daily, weekly, general)
-
-
 
 # MVP
 
