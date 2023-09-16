@@ -7,6 +7,8 @@ import {
   TaskContextProviderProps,
 } from "../context/TaskContext";
 import { renderHook } from "@testing-library/react";
+import { Simulate } from "react-dom/test-utils";
+import error = Simulate.error;
 
 const createWrapper = ({
   db = new PouchDB<ITask>("testTasks", { adapter: "memory" }),
@@ -60,7 +62,6 @@ describe("TaskService", () => {
   });
 
   it("createTask", async () => {
-    const rootTask = new Task("createTask-root");
     const childParentMap = new Map<TaskID, TaskID>();
     const {
       result: {
@@ -70,6 +71,7 @@ describe("TaskService", () => {
     } = renderHook(useTaskHooks, {
       wrapper: createWrapper({ childParentMap }),
     });
+    const rootTask = new Task("createTask-root");
     await createTestTask(hooks, rootTask);
 
     const subTask = new Task("createTask-child");
@@ -135,7 +137,7 @@ describe("TaskService", () => {
     expect(await getTaskById(task.id)).toEqual(task);
     await deleteTask(task.id);
     expect(await getRootTasks()).not.toContainEqual(task);
-    expect(() => getTaskById(task.id)).toThrow();
+    expect(async () => await getTaskById(task.id)).rejects.toThrow();
   });
 
   it("delete missing task", async () => {
@@ -146,7 +148,7 @@ describe("TaskService", () => {
     } = renderHook(useTaskHooks, {
       wrapper: createWrapper(),
     });
-    expect(() => deleteTask("missing")).toThrow();
+    expect(async () => await deleteTask("missing")).rejects.toThrow();
   });
 
   it("move task", async () => {
