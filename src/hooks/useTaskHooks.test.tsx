@@ -79,6 +79,11 @@ describe("TaskService", () => {
     expect(await getRootTasks()).toContainEqual(rootTask);
     expect(await getTaskById(rootTask.subTaskIds[0])).toEqual(subTask);
     expect(childParentMap.get(subTask.id)).toBe(rootTask.id);
+    // @formatter:off
+    const uuidRegex = new RegExp("^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$");
+    // @formatter:on
+    expect(uuidRegex.test(rootTask.id)).toEqual(true);
+    expect(uuidRegex.test(subTask.id)).toEqual(true);
   });
 
   it("createEmptyTask", async () => {
@@ -173,17 +178,72 @@ describe("TaskService", () => {
     const moveTestTask = new Task("moveTask-moving");
     await createTestTask(hooks, moveTestTask, subTask1);
 
-    expect((await getTaskById(subTask1.id)).subTaskIds).toContainEqual(
+    expect((await getTaskById(subTask1.id)).subTaskIds).toContain(
       moveTestTask.id
     );
-    expect(childParentMap.get(moveTestTask.id)).toContainEqual(subTask1.id);
+    expect(childParentMap.get(moveTestTask.id)).toContain(subTask1.id);
 
     await moveTask(moveTestTask, subTask2);
-    // need to add not contain
-    expect((await getTaskById(subTask2.id)).subTaskIds).toContainEqual(
+    // task under subtask2
+    expect((await getTaskById(subTask2.id)).subTaskIds).toContain(
       moveTestTask.id
     );
-    expect(childParentMap.get(moveTestTask.id)).toContainEqual(subTask2.id);
+    expect(childParentMap.get(moveTestTask.id)).toContain(subTask2.id);
+
+    // task no longer under subtask1
+    expect((await getTaskById(subTask1.id)).subTaskIds).not.toContain(
+      moveTestTask.id
+    );
+    expect(childParentMap.get(moveTestTask.id)).not.toContain(subTask1.id);
+  });
+
+  it("copyTask", async () => {
+    const childParentMap = new Map<TaskID, TaskID>();
+    const {
+      result: {
+        current: hooks,
+        current: { createTask, copyTask, getTaskById },
+      },
+    } = renderHook(useTaskHooks, {
+      wrapper: createWrapper({ childParentMap }),
+    });
+
+    const rootTask = new Task("copyTask-root");
+    await createTask(rootTask);
+
+    const subTask1 = new Task("copyTask-child1");
+    await createTestTask(hooks, subTask1, rootTask);
+
+    const subTask2 = new Task("copyTask-child2");
+    await createTestTask(hooks, subTask2, rootTask);
+
+    const copyTestTask = new Task("task-to-copy");
+    await createTestTask(hooks, copyTestTask, subTask1);
+
+    // check that task exists under subtask1
+    expect((await getTaskById(subTask1.id)).subTaskIds).toContain(
+      copyTestTask.id
+    );
+    expect(childParentMap.get(copyTestTask.id)).toContain(subTask1.id);
+
+    // check that task isn't under subtask2
+    expect((await getTaskById(subTask2.id)).subTaskIds).not.toContain(
+      copyTestTask.id
+    );
+    expect(childParentMap.get(copyTestTask.id)).not.toContain(subTask2.id);
+
+    //copy task
+    let newTaskId = await copyTask(copyTestTask, subTask2);
+
+    // task under subtask2
+    expect((await getTaskById(subTask2.id)).subTaskIds).toContain(newTaskId);
+    expect(childParentMap.get(newTaskId)).toContain(subTask2.id);
+
+    //old task still under subtask1
+    expect((await getTaskById(subTask1.id)).subTaskIds).toContain(
+      copyTestTask.id
+    );
+    expect(childParentMap.get(copyTestTask.id)).toContain(subTask1.id);
   });
 
   it("updateState", async () => {
@@ -211,6 +271,7 @@ describe("TaskService", () => {
   });
 });
 
+// Creates a task and pushes to the parent subtasks if the parent exists
 async function createTestTask(
   { createTask }: ReturnType<typeof useTaskHooks>,
   task: Task,

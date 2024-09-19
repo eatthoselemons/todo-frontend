@@ -1,6 +1,7 @@
 import { BaseState, ITask, Task, TaskID } from "../domain/Task";
 import { useContext, useMemo } from "react";
 import { TaskContext } from "../context/TaskContext";
+import TaskNotFoundError from "../customErrors";
 
 const useTaskHooks = () => {
   const { childParentMap, db } = useContext(TaskContext);
@@ -16,7 +17,7 @@ const useTaskHooks = () => {
 
     function collectChildren(task: Task) {
       task.subTaskIds.forEach((childId) => {
-        childParentMap.set(childId, task.id);
+        addToChildParentMap(childId, task.id);
       });
     }
 
@@ -87,13 +88,16 @@ const useTaskHooks = () => {
     async function createTask(
       task: Task,
       parentId: TaskID = "root"
-    ): Promise<void> {
+    ): Promise<string> {
       await ensureRoot();
 
       if (task === null) {
         throw new Error("No task to create");
       }
       if (childParentMap.get(task.id) === parentId) {
+        throw new Error("task is already child of parent");
+      }
+      if (childParentMap.get(task.id) != undefined) {
         throw new Error("Task is already the child of another task");
       }
 
@@ -103,16 +107,12 @@ const useTaskHooks = () => {
       parent.subTaskIds.push(task.id);
       await db.put({ _id: parentId, ...parent });
       //store ancestry data
-      childParentMap.set(task.id, parent.id);
+      addToChildParentMap(task.id, parent.id);
 
       // save new task
       await db.put({ _id: task.id, ...task });
-    }
 
-    async function moveTask(childTask: Task, parentTask: Task): Promise<void> {
-      parentTask.subTaskIds.push(childTask.id);
-      childParentMap.set(childTask.id, parentTask.id);
-      await updateTask(parentTask);
+      return task.id;
     }
 
     async function updateTask(task: Task): Promise<void> {
@@ -125,18 +125,55 @@ const useTaskHooks = () => {
       console.assert(id !== "root");
 
       const currentTask = await db.get(id);
-      const parentTask = await db.get(childParentMap.get(id));
+      const parentTask = await db.get(getFromChildParentMap(id));
       // delete children before deleting itself
       await Promise.all(currentTask.subTaskIds.map((it) => deleteTask(it)));
       // remove reference to itself after being deleted
       await db.remove(currentTask);
 
-      childParentMap.delete(id);
+      removeFromChildParentMap(id);
       parentTask.subTaskIds.splice(parentTask.subTaskIds.indexOf(id), 1);
 
       await db.put(parentTask);
 
       // TODO Store task in undo stack, stack is erased on page unload
+    }
+
+    async function copyTask(
+      childTask: Task,
+      newParentTask: Task
+    ): Promise<TaskID> {
+      // make new task with same values different id
+      let newChildTask = await getTaskById(
+        await createTask(new Task(childTask.text, childTask.internalState))
+      );
+
+      // move to new task
+      newParentTask.subTaskIds.push(newChildTask.id);
+      addToChildParentMap(newChildTask.id, newParentTask.id);
+      await updateTask(newParentTask);
+
+      return newChildTask.id;
+    }
+
+    async function moveTask(
+      childTask: Task,
+      newParentTask: Task
+    ): Promise<void> {
+      // delete from parent child map
+      let oldParentId = getFromChildParentMap(childTask.id);
+      removeFromChildParentMap(childTask.id);
+      // move to new task
+      newParentTask.subTaskIds.push(childTask.id);
+      addToChildParentMap(childTask.id, newParentTask.id);
+      await updateTask(newParentTask);
+      // remove from old task
+      let oldParentTask = await getTaskById(oldParentId);
+      oldParentTask.subTaskIds.splice(
+        oldParentTask.subTaskIds.indexOf(childTask.id),
+        1
+      );
+      await updateTask(oldParentTask);
     }
 
     async function deleteTasks(taskIds: Array<TaskID>) {
@@ -150,17 +187,41 @@ const useTaskHooks = () => {
       db.put(tempTask);
     }
 
+    function removeFromChildParentMap(taskId: string): boolean {
+      try {
+        childParentMap.delete(taskId);
+        return true;
+      } catch (any) {
+        console.log("unable to find task id");
+        return false;
+      }
+    }
+
+    function getFromChildParentMap(taskId: string): string {
+      let parentId = childParentMap.get(taskId);
+      if (parentId === undefined) {
+        throw new TaskNotFoundError("parent task not found");
+      }
+      return parentId;
+    }
+
+    function addToChildParentMap(taskId: string, parentTaskId: string): void {
+      childParentMap.set(taskId, parentTaskId);
+    }
+
     return {
       watchTaskForChanges,
       getRootTaskIds,
       getRootTasks,
       getTaskById,
       createTask,
+      copyTask,
       moveTask,
       updateTask,
       deleteTask,
       deleteTasks,
       taskStateChange,
+      getFromChildParentMap,
     };
   }, [db, childParentMap]);
 };
