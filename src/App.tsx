@@ -1,6 +1,15 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { Box, Container, IconButton, Stack, Typography } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Container,
+  IconButton,
+  List,
+  ListItem,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { Add, Delete, Menu, MenuOpen } from "@mui/icons-material";
 import TaskList from "./components/TaskList";
 import { AddTaskModal } from "./components/AddTaskModal";
 import { Task, TaskID } from "./domain/Task";
@@ -10,17 +19,23 @@ import {
   CheckboxContextProvider,
 } from "./context/CheckboxContext";
 import useTaskHooks from "./hooks/useTaskHooks";
+import { MenuModal } from "./components/MenuModal";
 
 const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showMenuModal, setShowMenuModal] = useState(false);
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
   const { checkedItems } = useContext(CheckboxContext);
 
-  const { getRootTaskIds, deleteTasks } = useTaskHooks();
+  const { getTaskById, getRootTaskIds, deleteTasks } = useTaskHooks();
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);
   }, []);
+
+  const getFirstCheckedId = () => {
+    return Object.keys(checkedItems).filter((key) => checkedItems[key])[0];
+  };
 
   const onRootTaskChange = useCallback((task: Task) => {
     setTaskIds(task.subTaskIds);
@@ -31,6 +46,15 @@ const App: React.FC = () => {
       Object.keys(checkedItems).filter((id) => checkedItems[id])
     ).then(deleteTasks);
   }, [checkedItems]);
+
+  const [checkedSubtasks, setCheckedSubtasks] = useState<String[]>([]);
+  const currentSubTaskIds = () => {
+    Promise.resolve(getTaskById(getFirstCheckedId()))
+      .then((task) => task.subTaskIds)
+      .then((ids) => {
+        setCheckedSubtasks(ids);
+      });
+  };
 
   useTaskWatcher("root", onRootTaskChange);
 
@@ -74,6 +98,17 @@ const App: React.FC = () => {
             >
               <Add fontSize="inherit" />
             </IconButton>
+            <IconButton
+              aria-label="menu"
+              size="large"
+              onClick={() => setShowMenuModal(!showMenuModal)}
+            >
+              {showMenuModal ? (
+                <MenuOpen fontSize="inherit" />
+              ) : (
+                <Menu fontSize="inherit" />
+              )}
+            </IconButton>
             {/*TODO change state*/}
           </Stack>
         </Box>
@@ -82,13 +117,25 @@ const App: React.FC = () => {
       {/* Content */}
       <main>
         <TaskList taskIDs={taskIds} />
+        <p>Task.subTaskIds</p>
+        <Button onClick={currentSubTaskIds}>refresh</Button>
+        <List>
+          {checkedSubtasks.map((id) => (
+            <ListItem>{id}</ListItem>
+          ))}
+        </List>
       </main>
       {/* Modal */}
       <AddTaskModal
-        taskId="root"
+        taskId={getFirstCheckedId() || "root"}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />
+      <MenuModal
+        showMenuModal={showMenuModal}
+        setShowMenuModal={setShowMenuModal}
+        taskId={getFirstCheckedId()}
+      ></MenuModal>
     </Container>
   );
 };

@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Checkbox,
   Collapse,
@@ -9,7 +12,15 @@ import {
   ListItemText,
   Popover,
 } from "@mui/material";
-import { Add, Delete, MoreVert } from "@mui/icons-material";
+import {
+  Add,
+  Delete,
+  ExpandLess,
+  ExpandMore,
+  Menu,
+  MenuOpen,
+  MoreVert,
+} from "@mui/icons-material";
 import * as React from "react";
 import { Task, TaskID } from "../domain/Task";
 import {
@@ -32,7 +43,7 @@ interface TaskProps {
 
 export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   const [visible, setVisible] = useState<boolean>(false);
-  const [subTasksOpen, setSubTasksOpen] = useState<boolean>(false);
+  const [showSubTasks, setShowSubTasks] = useState<boolean>(false);
   const [actionsOpen, setActionsOpen] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(true);
@@ -84,7 +95,8 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   return (
     visible && (
       <DepthContextProvider>
-        <ListItem
+        <Box sx={{ flexDirection: "column" }}>
+          {/*
           key={taskID}
           secondaryAction={
             // TODO Next state button (quick access)
@@ -92,7 +104,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
               <MoreVert id={`${taskID}-actions-button`} />
             </IconButton>
           }
-        >
+        >*/}
           <ListItemButton onClick={handleItemClick}>
             <ListItemIcon>
               <EventBarrier>
@@ -113,18 +125,29 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
               // onMouseDown={}
               // onTouchStart={}
             >
-              {task?.text}
+              {task?.text} | {task?.id}
             </ListItemText>
           </ListItemButton>
 
-          {/* Sub tasks */}
-
-          <Collapse in={subTasksOpen}>
-            <TaskList taskIDs={task?.subTaskIds ?? []} />
-          </Collapse>
-
           {/* Context menu */}
 
+          <IconButton
+            aria-label={`${task?.id}-sub-task-dropdown`}
+            size="large"
+            onClick={() => setShowSubTasks(!showSubTasks)}
+          >
+            {showSubTasks ? (
+              <ExpandMore fontSize="inherit" />
+            ) : (
+              <ExpandLess fontSize="inherit" />
+            )}
+          </IconButton>
+
+          {/* Sub tasks */}
+
+          <Collapse in={showSubTasks} unmountOnExit>
+            <TaskList taskIDs={task?.subTaskIds ?? []} />
+          </Collapse>
           <Popover
             open={actionsOpen}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
@@ -135,7 +158,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
             {/*TODO change state*/}
             {/*TODO rename*/}
           </Popover>
-        </ListItem>
+        </Box>
       </DepthContextProvider>
     )
   );

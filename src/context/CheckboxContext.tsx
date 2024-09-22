@@ -5,6 +5,7 @@ export type CheckedItems = Record<TaskID, boolean>;
 
 // Use records to make sure that the checkedItems listeners are updated everytime
 // an item is changed
+// todo
 const DefaultCheckboxContextParameters: {
   checkedItems: CheckedItems;
   setCheckedItems: (map: CheckedItems) => void;
