@@ -9,11 +9,9 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ taskIDs }) => {
   return taskIDs.length > 0 ? (
-    <List>
+    <List sx={{ flexDirection: "column" }}>
       {taskIDs.map((taskID) => (
-        <Box sx={{ flexDirection: "column" }}>
-          <TaskComponent taskID={taskID} key={taskID} />
-        </Box>
+        <TaskComponent taskID={taskID} key={taskID} />
       ))}
     </List>
   ) : null;

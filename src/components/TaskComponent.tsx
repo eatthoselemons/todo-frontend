@@ -95,8 +95,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   return (
     visible && (
       <DepthContextProvider>
-        <Box sx={{ flexDirection: "column" }}>
-          {/*
+        <ListItem
           key={taskID}
           secondaryAction={
             // TODO Next state button (quick access)
@@ -104,7 +103,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
               <MoreVert id={`${taskID}-actions-button`} />
             </IconButton>
           }
-        >*/}
+        >
           <ListItemButton onClick={handleItemClick}>
             <ListItemIcon>
               <EventBarrier>
@@ -142,12 +141,6 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
               <ExpandLess fontSize="inherit" />
             )}
           </IconButton>
-
-          {/* Sub tasks */}
-
-          <Collapse in={showSubTasks} unmountOnExit>
-            <TaskList taskIDs={task?.subTaskIds ?? []} />
-          </Collapse>
           <Popover
             open={actionsOpen}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
@@ -158,7 +151,15 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
             {/*TODO change state*/}
             {/*TODO rename*/}
           </Popover>
-        </Box>
+        </ListItem>
+
+        {/* Sub tasks */}
+
+        <Collapse in={showSubTasks} unmountOnExit>
+          <ListItem>
+            <TaskList taskIDs={task?.subTaskIds ?? []} />
+          </ListItem>
+        </Collapse>
       </DepthContextProvider>
     )
   );
