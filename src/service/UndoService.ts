@@ -23,9 +23,9 @@ export class UndoService {
     type: UndoStates
   ): Promise<Boolean> {
     const taskCopy: Task = new Task(
-      task.id,
       task.text,
-      task.state,
+      task.internalState,
+      task.id,
       task.subTaskIds
     );
 

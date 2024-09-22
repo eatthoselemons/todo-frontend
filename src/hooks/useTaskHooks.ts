@@ -7,7 +7,7 @@ const useTaskHooks = () => {
   const { childParentMap, db } = useContext(TaskContext);
 
   return useMemo(() => {
-    async function ensureRoot() {
+    async function ensureRootExists() {
       try {
         await db.get("root");
       } catch (ignore) {
@@ -42,8 +42,15 @@ const useTaskHooks = () => {
       };
     }
 
+    async function clearSubTasks(id: TaskID): Promise<void> {
+      deleteTask(id);
+      let task = await db.get(id);
+      task.subTaskIds = [];
+      await db.put({ _id: id, ...task });
+    }
+
     async function getRootTaskIds(): Promise<TaskID[]> {
-      await ensureRoot();
+      await ensureRootExists();
 
       const current = await db.get("root");
 
@@ -53,11 +60,12 @@ const useTaskHooks = () => {
 
       collectChildren(Task.from(current));
 
+      console.log(current.subTaskIds);
       return current.subTaskIds;
     }
 
     async function getRootTasks(): Promise<Task[]> {
-      await ensureRoot();
+      await ensureRootExists();
 
       const current = await db.get("root");
 
@@ -66,6 +74,8 @@ const useTaskHooks = () => {
       }
 
       collectChildren(Task.from(current));
+
+      console.log((await db.get("root")).subTaskIds);
 
       return Promise.all(
         current.subTaskIds.map(async (id: TaskID) =>
@@ -89,7 +99,7 @@ const useTaskHooks = () => {
       task: Task,
       parentId: TaskID = "root"
     ): Promise<string> {
-      await ensureRoot();
+      await ensureRootExists();
 
       if (task === null) {
         throw new Error("No task to create");
@@ -103,13 +113,14 @@ const useTaskHooks = () => {
 
       const parent = await db.get(parentId);
 
-      // update parent subtasks
+      // update parent subtasks cant use update task
       parent.subTaskIds.push(task.id);
       await db.put({ _id: parentId, ...parent });
+
       //store ancestry data
       addToChildParentMap(task.id, parent.id);
 
-      // save new task
+      // save new task cant use update task
       await db.put({ _id: task.id, ...task });
 
       return task.id;
@@ -222,6 +233,7 @@ const useTaskHooks = () => {
       deleteTasks,
       taskStateChange,
       getFromChildParentMap,
+      clearSubTasks,
     };
   }, [db, childParentMap]);
 };
