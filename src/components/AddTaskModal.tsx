@@ -38,7 +38,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const submit = () => {
     (async () => {
       try {
-        await createTask(new Task(newTaskName), taskId);
+        console.log(taskId);
+        let id = await createTask(new Task(newTaskName), taskId);
+        console.log(`new id: ${id}`);
       } catch (e) {
         // TODO handle errors
         return;
