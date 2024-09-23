@@ -1,10 +1,10 @@
 import { BaseState, ITask, Task, TaskID } from "../domain/Task";
-import { useContext, useMemo } from "react";
-import { TaskContext } from "../context/TaskContext";
+import { useMemo } from "react";
+import { useTaskContext } from "../context/TaskContext";
 import TaskNotFoundError from "../customErrors";
 
 const useTaskHooks = () => {
-  const { childParentMap, db } = useContext(TaskContext);
+  const { childParentMap, db } = useTaskContext();
 
   return useMemo(() => {
     async function ensureRootExists() {
@@ -134,8 +134,13 @@ const useTaskHooks = () => {
 
     async function deleteTask(id: TaskID) {
       console.assert(id !== "root");
+      let currentTask;
+      try {
+        currentTask = await db.get(id);
+      } catch (_) {
+        return;
+      }
 
-      const currentTask = await db.get(id);
       const parentTask = await db.get(getFromChildParentMap(id));
       // delete children before deleting itself
       await Promise.all(currentTask.subTaskIds.map((it) => deleteTask(it)));

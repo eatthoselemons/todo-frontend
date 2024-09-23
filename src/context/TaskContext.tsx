@@ -1,15 +1,8 @@
 import { ITask, TaskID } from "../domain/Task";
 import PouchDB from "pouchdb";
-import React, { createContext, PropsWithChildren } from "react";
+import React, { createContext, PropsWithChildren, useContext } from "react";
 
-const DefaultDB = new PouchDB<ITask>("tasks");
-// Partial visibility based on what task ids are known
-const DefaultChildParentMap = new Map<TaskID, TaskID>();
-
-export const TaskContext = createContext({
-  db: DefaultDB,
-  childParentMap: DefaultChildParentMap,
-});
+const TaskContext = createContext<TaskContextProviderProps>({});
 
 export interface TaskContextProviderProps {
   db?: PouchDB.Database<ITask>;
@@ -29,3 +22,13 @@ export const TaskContextProvider: React.FC<
     </TaskContext.Provider>
   );
 };
+
+export function useTaskContext(): TaskContextProviderProps {
+  const context = useContext(TaskContext);
+  if (!context.db) {
+    throw new Error(
+      "You are not inside a TaskContextProvider and the default context is empty."
+    );
+  }
+  return context;
+}

@@ -34,7 +34,6 @@ import TaskList from "./TaskList";
 import { DepthContext, DepthContextProvider } from "../context/DepthContext";
 import { CheckboxContext } from "../context/CheckboxContext";
 import EventBarrier from "./util/EventBarrier";
-import { TaskContext } from "../context/TaskContext";
 import useTaskHooks from "../hooks/useTaskHooks";
 
 interface TaskProps {
