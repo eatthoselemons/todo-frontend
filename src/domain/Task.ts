@@ -26,7 +26,7 @@ export interface ITask {
   text: string;
   internalState: BaseState;
   id: TaskID;
-  subTaskIds: Array<TaskID>;
+  path: Array<TaskID>;
   changeLog: Array<Transition>;
 }
 
@@ -35,7 +35,7 @@ export class Task implements ITask {
     public text: string,
     public internalState = BaseState.CREATED,
     public readonly id: TaskID = uuidv4(),
-    public readonly subTaskIds: Array<TaskID> = [],
+    public path: Array<TaskID> = [],
     public changeLog: Array<Transition> = []
   ) {}
 
@@ -49,7 +49,7 @@ export class Task implements ITask {
   }
 
   static from(obj: ITask): Task {
-    return new Task(obj.text, obj.internalState, obj.id, obj.subTaskIds);
+    return new Task(obj.text, obj.internalState, obj.id, obj.path || [], obj.changeLog);
   }
 }
 

@@ -1,24 +1,44 @@
 import { BaseState, ITask, Task, TaskID } from "../domain/Task";
 import { useMemo } from "react";
 import { useTaskContext } from "../context/TaskContext";
-import TaskNotFoundError from "../customErrors";
 
 const useTaskHooks = () => {
-  const { childParentMap, db } = useTaskContext();
+  const { db } = useTaskContext();
 
   return useMemo(() => {
     async function ensureRootExists() {
       try {
         await db.get("root");
       } catch (ignore) {
-        await db.put({ _id: "root", ...new Task("root"), id: "root" });
+        const rootTask = new Task("root", BaseState.CREATED, "root", ["root"]);
+        await db.put({ _id: "root", ...rootTask });
       }
     }
 
-    function collectChildren(task: Task) {
-      task.subTaskIds.forEach((childId) => {
-        addToChildParentMap(childId, task.id);
-      });
+    // Get parent ID from path (second to last element)
+    function getParentId(task: Task): TaskID | null {
+      if (task.path.length <= 1) return null;
+      return task.path[task.path.length - 2];
+    }
+
+    // Get all immediate children of a task
+    async function getImmediateChildren(taskId: TaskID): Promise<Task[]> {
+      const allDocs = await db.allDocs({ include_docs: true });
+      return allDocs.rows
+        .map(row => Task.from(row.doc as ITask))
+        .filter(task => {
+          // Task is immediate child if parent (second to last in path) is taskId
+          return task.path.length > 1 &&
+                 task.path[task.path.length - 2] === taskId;
+        });
+    }
+
+    // Get entire subtree (all descendants)
+    async function getSubtree(taskId: TaskID): Promise<Task[]> {
+      const allDocs = await db.allDocs({ include_docs: true });
+      return allDocs.rows
+        .map(row => Task.from(row.doc as ITask))
+        .filter(task => task.path.includes(taskId) && task.id !== taskId);
     }
 
     function watchTaskForChanges(
@@ -42,57 +62,19 @@ const useTaskHooks = () => {
       };
     }
 
-    async function clearSubTasks(id: TaskID): Promise<void> {
-      deleteTask(id);
-      let task = await db.get(id);
-      task.subTaskIds = [];
-      await db.put({ _id: id, ...task });
-    }
-
     async function getRootTaskIds(): Promise<TaskID[]> {
       await ensureRootExists();
-
-      const current = await db.get("root");
-
-      if (!current) {
-        return [];
-      }
-
-      collectChildren(Task.from(current));
-
-      console.log(current.subTaskIds);
-      return current.subTaskIds;
+      const children = await getImmediateChildren("root");
+      return children.map(child => child.id);
     }
 
     async function getRootTasks(): Promise<Task[]> {
       await ensureRootExists();
-
-      const current = await db.get("root");
-
-      if (!current) {
-        return [];
-      }
-
-      collectChildren(Task.from(current));
-
-      console.log((await db.get("root")).subTaskIds);
-
-      return Promise.all(
-        current.subTaskIds.map(async (id: TaskID) =>
-          Task.from(await db.get(id))
-        )
-      ).then((children: Task[]) => {
-        children.forEach((task) => collectChildren(task));
-        return children;
-      });
+      return getImmediateChildren("root");
     }
 
     async function getTaskById(id: TaskID): Promise<Task> {
-      const task = Task.from(await db.get(id));
-
-      collectChildren(task);
-
-      return task;
+      return Task.from(await db.get(id));
     }
 
     async function createTask(
@@ -104,92 +86,85 @@ const useTaskHooks = () => {
       if (task === null) {
         throw new Error("No task to create");
       }
-      if (childParentMap.get(task.id) === parentId) {
-        throw new Error("task is already child of parent");
-      }
-      if (childParentMap.get(task.id) != undefined) {
-        throw new Error("Task is already the child of another task");
-      }
 
-      const parent = await db.get(parentId);
+      // Get parent to build path
+      const parent = Task.from(await db.get(parentId));
 
-      // update parent subtasks cant use update task
-      parent.subTaskIds.push(task.id);
-      await db.put({ _id: parentId, ...parent });
+      // Set the path for the new task (parent's path + task's own id)
+      task.path = [...parent.path, task.id];
 
-      //store ancestry data
-      addToChildParentMap(task.id, parent.id);
-
-      // save new task cant use update task
+      // Save new task
       await db.put({ _id: task.id, ...task });
 
       return task.id;
     }
 
     async function updateTask(task: Task): Promise<void> {
-      // TODO handle "rebase" where a child is moved to a different parent
-      // why not use getbyId here?
       await db.put({ ...(await db.get(task.id)), ...task });
     }
 
     async function deleteTask(id: TaskID) {
       console.assert(id !== "root");
-      let currentTask;
+
       try {
-        currentTask = await db.get(id);
+        await db.get(id);
       } catch (_) {
         return;
       }
 
-      const parentTask = await db.get(getFromChildParentMap(id));
-      // delete children before deleting itself
-      await Promise.all(currentTask.subTaskIds.map((it) => deleteTask(it)));
-      // remove reference to itself after being deleted
-      await db.remove(currentTask);
+      // Get all descendants
+      const descendants = await getSubtree(id);
 
-      removeFromChildParentMap(id);
-      parentTask.subTaskIds.splice(parentTask.subTaskIds.indexOf(id), 1);
-
-      await db.put(parentTask);
-
-      // TODO Store task in undo stack, stack is erased on page unload
-    }
-
-    async function copyTask(
-      childTask: Task,
-      newParentTask: Task
-    ): Promise<TaskID> {
-      // make new task with same values different id
-      let newChildTask = await getTaskById(
-        await createTask(new Task(childTask.text, childTask.internalState))
-      );
-
-      // move to new task
-      newParentTask.subTaskIds.push(newChildTask.id);
-      addToChildParentMap(newChildTask.id, newParentTask.id);
-      await updateTask(newParentTask);
-
-      return newChildTask.id;
+      // Delete the task and all descendants
+      const toDelete = [id, ...descendants.map(d => d.id)];
+      await Promise.all(toDelete.map(async (taskId) => {
+        const task = await db.get(taskId);
+        await db.remove(task);
+      }));
     }
 
     async function moveTask(
       childTask: Task,
       newParentTask: Task
     ): Promise<void> {
-      // delete from parent child map
-      let oldParentId = getFromChildParentMap(childTask.id);
-      removeFromChildParentMap(childTask.id);
-      // move to new task
-      newParentTask.subTaskIds.push(childTask.id);
-      addToChildParentMap(childTask.id, newParentTask.id);
-      await updateTask(newParentTask);
-      // remove from old task
-      let oldParentTask = await getTaskById(oldParentId);
-      oldParentTask.subTaskIds.splice(
-        oldParentTask.subTaskIds.indexOf(childTask.id),
-        1
-      );
-      await updateTask(oldParentTask);
+      // Get all descendants that need path updates
+      const descendants = await getSubtree(childTask.id);
+
+      // Calculate new path for the moved task
+      const newPath = [...newParentTask.path, childTask.id];
+      const oldPathLength = childTask.path.length;
+
+      // Update the moved task's path
+      childTask.path = newPath;
+      await updateTask(childTask);
+
+      // Update all descendants' paths
+      await Promise.all(descendants.map(async (descendant) => {
+        // Keep the relative path after the moved node
+        const relativePath = descendant.path.slice(oldPathLength);
+        descendant.path = [...newPath, ...relativePath];
+        await updateTask(descendant);
+      }));
+    }
+
+    async function copyTask(
+      childTask: Task,
+      newParentTask: Task
+    ): Promise<TaskID> {
+      // Create new task with same values but new id
+      const newTask = new Task(childTask.text, childTask.internalState);
+
+      // Create the task under the new parent
+      await createTask(newTask, newParentTask.id);
+
+      // Recursively copy all descendants
+      const children = await getImmediateChildren(childTask.id);
+      for (const child of children) {
+        const copiedChild = await getTaskById(child.id);
+        await copyTask(copiedChild, newTask);
+      }
+
+      return newTask.id;
     }
 
     async function deleteTasks(taskIds: Array<TaskID>) {
@@ -203,26 +178,16 @@ const useTaskHooks = () => {
       db.put(tempTask);
     }
 
-    function removeFromChildParentMap(taskId: string): boolean {
-      try {
-        childParentMap.delete(taskId);
-        return true;
-      } catch (any) {
-        console.log("unable to find task id");
-        return false;
-      }
+    async function clearSubTasks(id: TaskID): Promise<void> {
+      const children = await getImmediateChildren(id);
+      await Promise.all(children.map(child => deleteTask(child.id)));
     }
 
+    // For backward compatibility - returns parent from path
     function getFromChildParentMap(taskId: string): string {
-      let parentId = childParentMap.get(taskId);
-      if (parentId === undefined) {
-        throw new TaskNotFoundError("parent task not found");
-      }
-      return parentId;
-    }
-
-    function addToChildParentMap(taskId: string, parentTaskId: string): void {
-      childParentMap.set(taskId, parentTaskId);
+      // This is a temporary compatibility function
+      // In the future, we should get the parent directly from the task's path
+      throw new Error("getFromChildParentMap is deprecated - use getParentId instead");
     }
 
     return {
@@ -239,8 +204,11 @@ const useTaskHooks = () => {
       taskStateChange,
       getFromChildParentMap,
       clearSubTasks,
+      getImmediateChildren,
+      getSubtree,
+      getParentId,
     };
-  }, [db, childParentMap]);
+  }, [db]);
 };
 
 export default useTaskHooks;

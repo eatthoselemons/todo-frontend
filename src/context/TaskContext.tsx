@@ -6,7 +6,6 @@ const TaskContext = createContext<TaskContextProviderProps>({});
 
 export interface TaskContextProviderProps {
   db?: PouchDB.Database<ITask>;
-  childParentMap?: Map<TaskID, TaskID>;
 }
 
 export const TaskContextProvider: React.FC<
@@ -14,10 +13,9 @@ export const TaskContextProvider: React.FC<
 > = ({
   children,
   db = new PouchDB<ITask>("tasks"),
-  childParentMap = new Map<TaskID, TaskID>(),
 }) => {
   return (
-    <TaskContext.Provider value={{ db, childParentMap }}>
+    <TaskContext.Provider value={{ db }}>
       {children}
     </TaskContext.Provider>
   );

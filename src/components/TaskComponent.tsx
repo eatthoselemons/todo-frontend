@@ -30,7 +30,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import TaskList from "./TaskList";
+import TaskListWithParent from "./TaskListWithParent";
 import { DepthContext, DepthContextProvider } from "../context/DepthContext";
 import { CheckboxContext } from "../context/CheckboxContext";
 import EventBarrier from "./util/EventBarrier";
@@ -156,7 +156,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
 
         <Collapse in={showSubTasks} unmountOnExit>
           <ListItem>
-            <TaskList taskIDs={task?.subTaskIds ?? []} />
+            <TaskListWithParent parentId={taskID} />
           </ListItem>
         </Collapse>
       </DepthContextProvider>
