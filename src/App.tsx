@@ -42,7 +42,10 @@ const App: React.FC = () => {
   const deleteSelectedTasks = useCallback(() => {
     Promise.resolve(
       Object.keys(checkedItems).filter((id) => checkedItems[id])
-    ).then(deleteTasks);
+    ).then(deleteTasks).catch((error) => {
+      console.error("Failed to delete tasks:", error);
+      alert(`Failed to delete tasks: ${error.message}`);
+    });
   }, [checkedItems]);
 
   const [checkedSubtasks, setCheckedSubtasks] = useState<String[]>([]);
@@ -135,7 +138,7 @@ const App: React.FC = () => {
       </main>
       {/* Modal */}
       <AddTaskModal
-        taskId={getFirstCheckedId() || "root"}
+        parentTaskId={getFirstCheckedId() || "root"}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />

@@ -14,14 +14,14 @@ import useTaskHooks from "../hooks/useTaskHooks";
 interface AddTaskModalProps {
   showAddModal: boolean;
   setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
-  taskId: TaskID;
+  parentTaskId: TaskID;
   onClose?: () => {};
 }
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   showAddModal,
   setShowAddModal,
-  taskId,
+  parentTaskId,
   onClose,
 }) => {
   const [newTaskName, setTaskName] = useState("");
@@ -47,8 +47,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
     (async () => {
       try {
-        console.log("Creating task with parent:", taskId);
-        let id = await createTask(new Task(newTaskName), taskId);
+        console.log("Creating task with parent:", parentTaskId);
+        let id = await createTask(new Task(newTaskName), parentTaskId);
         console.log(`new id: ${id}`);
         setTaskName("");
         close();

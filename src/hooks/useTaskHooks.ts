@@ -104,12 +104,14 @@ const useTaskHooks = () => {
     }
 
     async function deleteTask(id: TaskID) {
-      console.assert(id !== "root");
+      if (id === "root") {
+        throw new Error("Cannot delete root task");
+      }
 
       try {
         await db.get(id);
-      } catch (_) {
-        return;
+      } catch (error) {
+        throw new Error(`Task with id ${id} does not exist`);
       }
 
       // Get all descendants
