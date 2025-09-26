@@ -36,17 +36,27 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   };
 
   const submit = () => {
+    if (!newTaskName || newTaskName.trim() === "") {
+      setHasTaskNameError(true);
+      setTaskNameError("Task name is required");
+      return;
+    }
+
+    setHasTaskNameError(false);
+    setTaskNameError(undefined);
+
     (async () => {
       try {
-        console.log(taskId);
+        console.log("Creating task with parent:", taskId);
         let id = await createTask(new Task(newTaskName), taskId);
         console.log(`new id: ${id}`);
+        setTaskName("");
+        close();
       } catch (e) {
-        // TODO handle errors
-        return;
+        console.error("Error creating task:", e);
+        setHasTaskNameError(true);
+        setTaskNameError("Failed to create task. Please try again.");
       }
-      setTaskName("");
-      close();
     })();
   };
 
@@ -62,8 +72,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
             title="Name of Task"
             fullWidth
             error={hasTaskNameError}
+            helperText={taskNameError}
             value={newTaskName}
-            onChange={(e) => setTaskName(e.target.value)}
+            onChange={(e) => {
+              setTaskName(e.target.value);
+              if (hasTaskNameError) {
+                setHasTaskNameError(false);
+                setTaskNameError(undefined);
+              }
+            }}
             onKeyDown={(e) => {
               if (
                 e.key === "Enter" &&

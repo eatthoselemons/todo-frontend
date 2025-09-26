@@ -13,12 +13,12 @@ import { Add, Delete, Menu, MenuOpen } from "@mui/icons-material";
 import TaskList from "./components/TaskList";
 import { AddTaskModal } from "./components/AddTaskModal";
 import { Task, TaskID } from "./domain/Task";
-import { useTaskWatcher } from "./hooks/useTaskWatcher";
 import {
   CheckboxContext,
   CheckboxContextProvider,
 } from "./context/CheckboxContext";
 import useTaskHooks from "./hooks/useTaskHooks";
+import { useTaskContext } from "./context/TaskContext";
 import { MenuModal } from "./components/MenuModal";
 
 const App: React.FC = () => {
@@ -27,7 +27,8 @@ const App: React.FC = () => {
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
   const { checkedItems } = useContext(CheckboxContext);
 
-  const { getTaskById, getRootTaskIds, deleteTasks } = useTaskHooks();
+  const { getTaskById, getRootTaskIds, deleteTasks, getImmediateChildren } = useTaskHooks();
+  const { db } = useTaskContext();
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);
@@ -37,9 +38,6 @@ const App: React.FC = () => {
     return Object.keys(checkedItems).filter((key) => checkedItems[key])[0];
   };
 
-  const onRootTaskChange = useCallback((task: Task) => {
-    setTaskIds(task.subTaskIds);
-  }, []);
 
   const deleteSelectedTasks = useCallback(() => {
     Promise.resolve(
@@ -48,15 +46,25 @@ const App: React.FC = () => {
   }, [checkedItems]);
 
   const [checkedSubtasks, setCheckedSubtasks] = useState<String[]>([]);
-  const currentSubTaskIds = () => {
-    Promise.resolve(getTaskById(getFirstCheckedId()))
-      .then((task) => task.subTaskIds)
-      .then((ids) => {
-        setCheckedSubtasks(ids);
-      });
+  const currentSubTaskIds = async () => {
+    const children = await getImmediateChildren(getFirstCheckedId());
+    setCheckedSubtasks(children.map(child => child.id));
   };
 
-  useTaskWatcher("root", onRootTaskChange);
+  // Watch for ANY database changes and refresh root tasks
+  useEffect(() => {
+    const changes = db
+      .changes({
+        since: "now",
+        live: true,
+      })
+      .on("change", () => {
+        // Any change could affect root tasks, so just refresh
+        getRootTaskIds().then(setTaskIds);
+      });
+
+    return () => changes.cancel();
+  }, [db, getRootTaskIds]);
 
   return (
     <Container>
@@ -117,7 +125,7 @@ const App: React.FC = () => {
       {/* Content */}
       <main>
         <TaskList taskIDs={taskIds} />
-        <p>Task.subTaskIds</p>
+        <p>Task children (path-based)</p>
         <Button onClick={currentSubTaskIds}>refresh</Button>
         <List>
           {checkedSubtasks.map((id) => (

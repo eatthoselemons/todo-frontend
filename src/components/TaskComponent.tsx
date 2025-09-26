@@ -6,6 +6,7 @@ import {
   Checkbox,
   Collapse,
   IconButton,
+  List,
   ListItem,
   ListItemButton,
   ListItemIcon,
@@ -35,6 +36,7 @@ import { DepthContext, DepthContextProvider } from "../context/DepthContext";
 import { CheckboxContext } from "../context/CheckboxContext";
 import EventBarrier from "./util/EventBarrier";
 import useTaskHooks from "../hooks/useTaskHooks";
+import { AddTaskModal } from "./AddTaskModal";
 
 interface TaskProps {
   taskID?: TaskID;
@@ -44,6 +46,8 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
   const [visible, setVisible] = useState<boolean>(false);
   const [showSubTasks, setShowSubTasks] = useState<boolean>(false);
   const [actionsOpen, setActionsOpen] = useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState<Task | undefined>();
@@ -53,7 +57,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
 
   const newItem = createRef<HTMLInputElement>();
 
-  const { getTaskById, updateTask } = useTaskHooks();
+  const { getTaskById, updateTask, getImmediateChildren, deleteTask } = useTaskHooks();
 
   useEffect(() => {
     if (!loading) {
@@ -91,6 +95,12 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
     updateTask(task);
   };
 
+  const handleDelete = async () => {
+    if (taskID) {
+      await deleteTask(taskID);
+    }
+  };
+
   return (
     visible && (
       <DepthContextProvider>
@@ -98,7 +108,14 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
           key={taskID}
           secondaryAction={
             // TODO Next state button (quick access)
-            <IconButton edge="end" aria-label="actions">
+            <IconButton
+              edge="end"
+              aria-label="actions"
+              onClick={(e) => {
+                setAnchorEl(e.currentTarget);
+                setActionsOpen(true);
+              }}
+            >
               <MoreVert id={`${taskID}-actions-button`} />
             </IconButton>
           }
@@ -142,13 +159,31 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
           </IconButton>
           <Popover
             open={actionsOpen}
+            anchorEl={anchorEl}
+            onClose={() => {
+              setActionsOpen(false);
+              setAnchorEl(null);
+            }}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
           >
-            {/*TODO Actions list*/}
-            {/*TODO delete*/}
-            {/*TODO add*/}
-            {/*TODO change state*/}
-            {/*TODO rename*/}
+            <List>
+              <ListItem button onClick={() => {
+                setShowAddModal(true);
+                setActionsOpen(false);
+                setAnchorEl(null);
+              }}>
+                <ListItemIcon><Add /></ListItemIcon>
+                <ListItemText primary="Add Subtask" />
+              </ListItem>
+              <ListItem button onClick={() => {
+                handleDelete();
+                setActionsOpen(false);
+                setAnchorEl(null);
+              }}>
+                <ListItemIcon><Delete /></ListItemIcon>
+                <ListItemText primary="Delete Task" />
+              </ListItem>
+            </List>
           </Popover>
         </ListItem>
 
@@ -159,6 +194,13 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
             <TaskListWithParent parentId={taskID} />
           </ListItem>
         </Collapse>
+
+        {/* Add Subtask Modal */}
+        <AddTaskModal
+          taskId={taskID}
+          showAddModal={showAddModal}
+          setShowAddModal={setShowAddModal}
+        />
       </DepthContextProvider>
     )
   );

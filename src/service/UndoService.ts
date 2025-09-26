@@ -26,7 +26,7 @@ export class UndoService {
       task.text,
       task.internalState,
       task.id,
-      task.subTaskIds
+      task.path
     );
 
     let item: Undo;
