@@ -197,7 +197,7 @@ export const TaskComponent: React.FC<TaskProps> = ({ taskID }) => {
 
         {/* Add Subtask Modal */}
         <AddTaskModal
-          taskId={taskID}
+          parentTaskId={taskID}
           showAddModal={showAddModal}
           setShowAddModal={setShowAddModal}
         />
