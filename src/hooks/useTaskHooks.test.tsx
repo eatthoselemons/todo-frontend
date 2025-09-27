@@ -271,11 +271,11 @@ describe("TaskService", () => {
     await createTestTask(hooks, subTask1, rootTask);
 
     expect((await getTaskById(subTask1.id)).internalState).toBe(
-      BaseState.CREATED
+      BaseState.NOT_STARTED
     );
-    await taskStateChange(subTask1.id, BaseState[BaseState.STARTED]);
+    await taskStateChange(subTask1.id, "IN_PROGRESS");
     expect((await getTaskById(subTask1.id)).state).toBe(
-      BaseState[BaseState.STARTED]
+      BaseState.IN_PROGRESS
     );
   });
 });

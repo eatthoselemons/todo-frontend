@@ -10,7 +10,7 @@ const useTaskHooks = () => {
       try {
         await db.get("root");
       } catch (ignore) {
-        const rootTask = new Task("root", BaseState.CREATED, "root", ["root"]);
+        const rootTask = new Task("root", BaseState.NOT_STARTED, "root", ["root"]);
         await db.put({ _id: "root", ...rootTask });
       }
     }
@@ -192,6 +192,13 @@ const useTaskHooks = () => {
       throw new Error("getFromChildParentMap is deprecated - use getParentId instead");
     }
 
+    async function getAllTasks(): Promise<Task[]> {
+      const allDocs = await db.allDocs({ include_docs: true });
+      return allDocs.rows
+        .map(row => Task.from(row.doc as ITask))
+        .filter(task => task.id !== "root");
+    }
+
     return {
       watchTaskForChanges,
       getRootTaskIds,
@@ -209,6 +216,7 @@ const useTaskHooks = () => {
       getImmediateChildren,
       getSubtree,
       getParentId,
+      getAllTasks,
     };
   }, [db]);
 };

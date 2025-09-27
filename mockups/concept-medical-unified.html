@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Concept G – Medical Unified</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .layout { display: grid; grid-template-columns: 1fr 420px; gap: 12px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header card">
+      <div class="badge">Concept G</div>
+      <div>Medical – Unified Components</div>
+      <div class="spacer"></div>
+      <a class="btn" href="./index.html">Back</a>
+      <button class="btn primary">New Visit</button>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div class="header">
+          <div>Tree (Medical) <span class="small muted" style="margin-left:8px;">↳ question/answer as subtasks</span></div>
+          <div class="spacer"></div>
+          <button class="btn">Expand</button>
+          <button class="btn">Collapse</button>
+        </div>
+        <div class="tree">
+          <div class="node root">
+            <div class="node-row is-progress">
+              <div class="chev">▾</div>
+              <div class="status-chip status-progress"><span class="dot"></span> Progress</div>
+              <div class="node-title">Medical</div>
+              <div class="actions">
+                <button class="text-btn">+ Child</button>
+                <button class="text-btn">YAML</button>
+              </div>
+            </div>
+
+            <div class="node indent-1">
+              <div class="node-row">
+                <div class="chev">▾</div>
+                <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                <div class="node-title">Visits</div>
+                <div class="actions">
+                  <button class="text-btn">+ Child</button>
+                  <button class="text-btn">YAML</button>
+                </div>
+              </div>
+
+              <div class="node indent-2">
+                <div class="node-row is-progress">
+                  <div class="chev">▾</div>
+                  <div class="status-chip status-progress"><span class="dot"></span> Progress</div>
+                  <div class="node-title">Oct 12 – Dr. Lin</div>
+                  <span class="due upcoming">Due in 6d</span>
+                  <div class="actions">
+                    <button class="text-btn">+ Child</button>
+                    <button class="text-btn">YAML</button>
+                  </div>
+                </div>
+                <!-- Reuse inline drawer for Q&A/Notes -->
+                <div class="drawer">
+                  <div class="row small muted" style="margin-bottom: 6px;">
+                    <div>Visit Notes & Q&A (YAML)</div>
+                    <div class="spacer"></div>
+                    <div class="chips">
+                      <div class="chip">Add Q</div>
+                      <div class="chip">Add Answer</div>
+                      <div class="chip">Export</div>
+                    </div>
+                  </div>
+                  <textarea class="yaml" style="height: 220px;" spellcheck="false">date: 2025-10-12
+provider: Dr. Lin
+questions:
+  - q: What tests confirm diagnosis?
+    a: Ordered CBC and panel.
+  - q: Any non-medication options?
+    a: Try PT for 6 weeks.
+plan:
+  - item: CBC next week
+  - item: PT referral (Downtown PT)
+follow_up: 2025-11-10
+                  </textarea>
+                </div>
+              </div>
+
+              <div class="node indent-2">
+                <div class="node-row">
+                  <div class="chev">▾</div>
+                  <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                  <div class="node-title">Questions</div>
+                  <div class="actions">
+                    <button class="text-btn">+ Question</button>
+                  </div>
+                </div>
+                <div class="node indent-3">
+                  <div class="node-row">
+                    <div class="chev">▾</div>
+                    <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                    <div class="node-title">What tests confirm diagnosis?</div>
+                    <div class="actions"><button class="text-btn">+ Answer</button></div>
+                  </div>
+                  <div class="node indent-4 answer">
+                    <div class="node-row">
+                      <div class="chev">▸</div>
+                      <div class="status-chip status-done"><span class="dot"></span> Done</div>
+                      <div class="node-title">Answer: Ordered CBC and panel.</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="node indent-3">
+                  <div class="node-row">
+                    <div class="chev">▸</div>
+                    <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                    <div class="node-title">Any non-medication options?</div>
+                    <div class="actions"><button class="text-btn">+ Answer</button></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="node indent-2">
+                <div class="node-row">
+                  <div class="chev">▸</div>
+                  <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                  <div class="node-title">Billing</div>
+                  <div class="actions"><button class="text-btn">+ Child</button><button class="text-btn">YAML</button></div>
+                </div>
+                <!-- deeper billing tree to validate style -->
+                <div class="node indent-3">
+                  <div class="node-row">
+                    <div class="chev">▾</div>
+                    <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                    <div class="node-title">Pay doctor A through portal</div>
+                    <div class="actions"><button class="text-btn">+ Child</button><button class="text-btn">YAML</button></div>
+                  </div>
+                  <div class="node indent-4">
+                    <div class="node-row">
+                      <div class="chev">▾</div>
+                      <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                      <div class="node-title">Find portal link</div>
+                      <div class="actions"><button class="text-btn">+ Child</button><button class="text-btn">YAML</button></div>
+                    </div>
+                    <div class="node indent-5">
+                      <div class="node-row">
+                        <div class="chev">▸</div>
+                        <div class="status-chip status-not"><span class="dot"></span> Not</div>
+                        <div class="node-title">Verify account email</div>
+                        <div class="actions"><button class="text-btn">+ Child</button><button class="text-btn">YAML</button></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="header">
+          <div>Question Bank (Reusable)</div>
+          <div class="spacer"></div>
+          <button class="btn">Edit YAML</button>
+        </div>
+        <div style="padding: 12px;">
+          <textarea class="yaml" style="height: 320px;" spellcheck="false">categories:
+  - name: Symptoms
+    items:
+      - text: Any changes since last visit?
+      - text: What might be causing X?
+  - name: Medication
+    items:
+      - text: Side effects to watch for?
+      - text: Is the dosage still correct?
+          </textarea>
+          <div class="hint small" style="margin-top: 8px;">On mobile, this pane becomes a full-screen sheet using the same components.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

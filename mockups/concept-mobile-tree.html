@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Concept F – Mobile Tree</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="header card">
+      <div class="badge">Concept F</div>
+      <div>Mobile Tree</div>
+      <div class="spacer"></div>
+      <a class="btn" href="./index.html">Back</a>
+    </div>
+
+    <div class="phone">
+      <div class="topbar row">
+        <strong>Today</strong>
+        <div class="spacer"></div>
+        <span class="small muted">Double-tap cycles status</span>
+      </div>
+      <div class="screen">
+        <div class="card" style="margin-bottom: 10px;">
+          <div class="header">
+            <div>Urgent / Today</div>
+            <div class="spacer"></div>
+            <button class="btn small">Filters</button>
+          </div>
+          <div class="list">
+            <div>
+              <div>Pay doctor A through portal <span class="due today">Today</span></div>
+              <div class="breadcrumbs">Medical ▸ Billing</div>
+            </div>
+            <div>
+              <div>Call insurance</div>
+              <div class="breadcrumbs">Medical ▸ Denied insurance claim</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 10px;">
+          <div class="header">
+            <div>Upcoming</div>
+            <div class="spacer"></div>
+          </div>
+          <div class="list">
+            <div>
+              <div>Denied insurance claim <span class="due upcoming">Due in 6d</span></div>
+              <div class="breadcrumbs">Medical</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="header">
+            <div>Tree</div>
+            <div class="spacer"></div>
+            <button class="btn small">Search</button>
+          </div>
+          <div class="tree" style="padding-bottom: 12px;">
+            <div class="node root">
+              <div class="node-row is-progress">
+                <div class="chev">▾</div>
+                <div class="status-chip status-progress"><span class="dot"></span></div>
+                <div class="node-title">Medical</div>
+              </div>
+              <div class="node indent-1">
+                <div class="node-row is-progress">
+                  <div class="chev">▾</div>
+                  <div class="status-chip status-progress"><span class="dot"></span></div>
+                  <div class="node-title">Denied insurance claim</div>
+                </div>
+                <div class="node indent-2">
+                  <div class="node-row">
+                    <div class="chev">▸</div>
+                    <div class="status-chip status-not"><span class="dot"></span></div>
+                    <div class="node-title">Scan visit notes</div>
+                  </div>
+                </div>
+                <div class="node indent-2">
+                  <div class="node-row">
+                    <div class="chev">▸</div>
+                    <div class="status-chip status-not"><span class="dot"></span></div>
+                    <div class="node-title">Call insurance</div>
+                  </div>
+                  <!-- deeper levels to validate style -->
+                  <div class="node indent-3">
+                    <div class="node-row">
+                      <div class="chev">▾</div>
+                      <div class="status-chip status-not"><span class="dot"></span></div>
+                      <div class="node-title">Find policy number</div>
+                    </div>
+                    <div class="node indent-4">
+                      <div class="node-row">
+                        <div class="chev">▸</div>
+                        <div class="status-chip status-not"><span class="dot"></span></div>
+                        <div class="node-title">Check wallet folder</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 10px;">
+          <div class="header">
+            <div>Quick Due <span class="small muted">(assign to selected)</span></div>
+            <div class="spacer"></div>
+          </div>
+          <div style="padding: 10px;">
+            <div class="chips" style="margin-bottom: 8px;">
+              <div class="chip">+1d</div>
+              <div class="chip">+3d</div>
+              <div class="chip">+1w</div>
+              <div class="chip">Pick date</div>
+            </div>
+            <input class="btn" style="padding:6px 10px; width: 100%;" placeholder="Type date: 'fri', 'oct 12', '+1w'"/>
+            <div class="small muted" style="margin-top:6px;">This updates due date, not a new task.</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottombar">
+        <button class="btn ghost small">🏠 Today</button>
+        <button class="btn ghost small">🌲 Tree</button>
+        <button class="btn ghost small">➕ Add</button>
+        <button class="btn ghost small">🧑‍⚕️ Medical</button>
+        <button class="btn ghost small">⚙️ Settings</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

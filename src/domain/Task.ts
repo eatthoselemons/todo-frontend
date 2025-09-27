@@ -4,15 +4,17 @@ import { BorderAll } from "@mui/icons-material";
 export type TaskID = ReturnType<typeof uuidv4>;
 
 export enum BaseState {
-  CREATED,
-  STARTED,
-  FINISHED,
+  NOT_STARTED = "not_started",
+  IN_PROGRESS = "in_progress",
+  BLOCKED = "blocked",
+  DONE = "done",
 }
 
 const BaseStateOrder = [
-  BaseState.CREATED,
-  BaseState.STARTED,
-  BaseState.FINISHED,
+  BaseState.NOT_STARTED,
+  BaseState.IN_PROGRESS,
+  BaseState.BLOCKED,
+  BaseState.DONE,
 ];
 
 // const BaseStateOrder = Object.entries(BaseStates).filter(([key, _]) => !/\d+/.test(key)).map(([_, value]) => value)
@@ -28,28 +30,42 @@ export interface ITask {
   id: TaskID;
   path: Array<TaskID>;
   changeLog: Array<Transition>;
+  dueDate?: string;
 }
 
 export class Task implements ITask {
   constructor(
     public text: string,
-    public internalState = BaseState.CREATED,
+    public internalState = BaseState.NOT_STARTED,
     public readonly id: TaskID = uuidv4(),
     public path: Array<TaskID> = [],
-    public changeLog: Array<Transition> = []
+    public changeLog: Array<Transition> = [],
+    public dueDate?: string
   ) {}
 
   get state(): string {
-    return BaseState[this.internalState];
+    return this.internalState;
   }
 
   set state(state: string) {
-    // @ts-ignore
-    this.internalState = BaseState[state];
+    const upperState = state.toUpperCase() as keyof typeof BaseState;
+    if (upperState in BaseState) {
+      this.internalState = BaseState[upperState];
+    }
   }
 
   static from(obj: ITask): Task {
-    return new Task(obj.text, obj.internalState, obj.id, obj.path || [], obj.changeLog);
+    return new Task(obj.text, obj.internalState, obj.id, obj.path || [], obj.changeLog, obj.dueDate);
+  }
+
+  nextState(): void {
+    const currentIndex = BaseStateOrder.indexOf(this.internalState);
+    const nextIndex = (currentIndex + 1) % BaseStateOrder.length;
+    this.internalState = BaseStateOrder[nextIndex];
+    this.changeLog.push({
+      time: Date.now(),
+      newState: this.internalState,
+    });
   }
 }
 

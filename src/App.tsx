@@ -1,60 +1,21 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Container,
-  IconButton,
-  List,
-  ListItem,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { Add, Delete, Menu, MenuOpen } from "@mui/icons-material";
-import TaskList from "./components/TaskList";
-import { AddTaskModal } from "./components/AddTaskModal";
-import { Task, TaskID } from "./domain/Task";
-import {
-  CheckboxContext,
-  CheckboxContextProvider,
-} from "./context/CheckboxContext";
+import React, { useEffect, useState } from "react";
+import { TaskID } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
 import { useTaskContext } from "./context/TaskContext";
-import { MenuModal } from "./components/MenuModal";
+import TreeView from "./components/TreeView";
+import TodayUpcoming from "./components/TodayUpcoming";
+import "./styles/app.css";
 
 const App: React.FC = () => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showMenuModal, setShowMenuModal] = useState(false);
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
-  const { checkedItems } = useContext(CheckboxContext);
-
-  const { getTaskById, getRootTaskIds, deleteTasks, getImmediateChildren } = useTaskHooks();
+  const [filterText, setFilterText] = useState("");
+  const { getRootTaskIds } = useTaskHooks();
   const { db } = useTaskContext();
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);
   }, []);
 
-  const getFirstCheckedId = () => {
-    return Object.keys(checkedItems).filter((key) => checkedItems[key])[0];
-  };
-
-
-  const deleteSelectedTasks = useCallback(() => {
-    Promise.resolve(
-      Object.keys(checkedItems).filter((id) => checkedItems[id])
-    ).then(deleteTasks).catch((error) => {
-      console.error("Failed to delete tasks:", error);
-      alert(`Failed to delete tasks: ${error.message}`);
-    });
-  }, [checkedItems]);
-
-  const [checkedSubtasks, setCheckedSubtasks] = useState<String[]>([]);
-  const currentSubTaskIds = async () => {
-    const children = await getImmediateChildren(getFirstCheckedId());
-    setCheckedSubtasks(children.map(child => child.id));
-  };
-
-  // Watch for ANY database changes and refresh root tasks
   useEffect(() => {
     const changes = db
       .changes({
@@ -62,7 +23,6 @@ const App: React.FC = () => {
         live: true,
       })
       .on("change", () => {
-        // Any change could affect root tasks, so just refresh
         getRootTaskIds().then(setTaskIds);
       });
 
@@ -70,84 +30,46 @@ const App: React.FC = () => {
   }, [db, getRootTaskIds]);
 
   return (
-    <Container>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography variant="h3">Liz'z Lemons</Typography>
-        <Box
-          sx={{
-            display: "flex",
-            flex: "1 0 auto",
-            justifyContent: "space-between",
-          }}
-        >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              marginLeft: "auto",
-            }}
-          >
-            <IconButton
-              aria-label="delete"
-              size="large"
-              onClick={deleteSelectedTasks}
-            >
-              <Delete fontSize="inherit" color="error" />
-            </IconButton>
-            <IconButton
-              aria-label="add"
-              size="large"
-              onClick={() => setShowAddModal(true)}
-            >
-              <Add fontSize="inherit" />
-            </IconButton>
-            <IconButton
-              aria-label="menu"
-              size="large"
-              onClick={() => setShowMenuModal(!showMenuModal)}
-            >
-              {showMenuModal ? (
-                <MenuOpen fontSize="inherit" />
-              ) : (
-                <Menu fontSize="inherit" />
-              )}
-            </IconButton>
-            {/*TODO change state*/}
-          </Stack>
-        </Box>
-      </Box>
+    <div className="page">
+      <div className="header card">
+        <div className="badge">Todo App</div>
+        <div>Tree Focused</div>
+        <div className="spacer"></div>
+      </div>
 
-      {/* Content */}
-      <main>
-        <TaskList taskIDs={taskIds} />
-        <p>Task children (path-based)</p>
-        <Button onClick={currentSubTaskIds}>refresh</Button>
-        <List>
-          {checkedSubtasks.map((id) => (
-            <ListItem>{id}</ListItem>
-          ))}
-        </List>
-      </main>
-      {/* Modal */}
-      <AddTaskModal
-        parentTaskId={getFirstCheckedId() || "root"}
-        showAddModal={showAddModal}
-        setShowAddModal={setShowAddModal}
-      />
-      <MenuModal
-        showMenuModal={showMenuModal}
-        setShowMenuModal={setShowMenuModal}
-        taskId={getFirstCheckedId()}
-      ></MenuModal>
-    </Container>
+      <div className="layout">
+        <div className="card">
+          <div className="toolbar">
+            <input
+              type="search"
+              style={{ padding: "6px 10px", width: "260px" }}
+              placeholder="Filter or jump (e.g. 'sewing tote')"
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+            />
+            <div className="spacer"></div>
+            <div className="legend small muted">
+              <span className="status-chip status-not_started">
+                <span className="dot"></span> Not
+              </span>
+              <span className="status-chip status-in_progress">
+                <span className="dot"></span> Progress
+              </span>
+              <span className="status-chip status-blocked">
+                <span className="dot"></span> Blocked
+              </span>
+              <span className="status-chip status-done">
+                <span className="dot"></span> Done
+              </span>
+            </div>
+          </div>
+
+          <TreeView rootTaskIds={taskIds} />
+        </div>
+
+        <TodayUpcoming />
+      </div>
+    </div>
   );
 };
 
