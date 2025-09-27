@@ -101,7 +101,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             <button className="text-btn" onClick={() => setShowDrawer(!showDrawer)}>
               YAML
             </button>
-            <button className="text-btn" onClick={handleDelete} style={{ color: "#f87171" }}>
+            <button className="text-btn danger" onClick={handleDelete}>
               Delete
             </button>
           </div>

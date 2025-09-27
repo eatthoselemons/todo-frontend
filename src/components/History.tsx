@@ -81,9 +81,9 @@ const History: React.FC = () => {
                 {stat.day}
               </span>
               <div
+                className="history-bar-started"
                 style={{
                   height: "8px",
-                  background: "#1b273a",
                   flex: "0 0 120px",
                   overflow: "hidden",
                   borderRadius: "2px",
@@ -91,20 +91,20 @@ const History: React.FC = () => {
                 }}
               >
                 <div
+                  className="bar"
                   style={{
                     position: "absolute",
                     top: 0,
                     left: 0,
                     height: "8px",
-                    background: "#60a5fa",
                     width: `${Math.min((stat.started / maxCount) * 100, 100)}%`,
                   }}
                 ></div>
               </div>
               <div
+                className="history-bar-finished"
                 style={{
                   height: "8px",
-                  background: "#1b2a1f",
                   flex: "0 0 120px",
                   marginLeft: "8px",
                   overflow: "hidden",
@@ -113,12 +113,12 @@ const History: React.FC = () => {
                 }}
               >
                 <div
+                  className="bar"
                   style={{
                     position: "absolute",
                     top: 0,
                     left: 0,
                     height: "8px",
-                    background: "#34d399",
                     width: `${Math.min((stat.finished / maxCount) * 100, 100)}%`,
                   }}
                 ></div>

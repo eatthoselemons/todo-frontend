@@ -250,3 +250,52 @@ input[type="text"]::placeholder, input[type="search"]::placeholder {
   color: var(--muted);
   opacity: 0.6;
 }
+
+.stats { display: flex; gap: 12px; }
+.stat { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
+.stat .value { font-size: 24px; font-weight: 700; }
+.stat .label { color: var(--muted); font-size: 12px; }
+.stat.started {
+  background: rgba(96,165,250,0.10);
+  border-color: rgba(96,165,250,0.35);
+  color: var(--accent);
+}
+.stat.finished {
+  background: rgba(52,211,153,0.10);
+  border-color: rgba(52,211,153,0.35);
+  color: var(--accent-2);
+}
+.spark {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+  color: inherit;
+}
+.spark .bar { height: 100%; background: currentColor; }
+
+.history-bar-started {
+  background: #1b273a;
+}
+.history-bar-started .bar {
+  background: var(--accent);
+}
+.history-bar-finished {
+  background: #1b2a1f;
+}
+.history-bar-finished .bar {
+  background: var(--accent-2);
+}
+
+.error-text {
+  color: var(--danger);
+}
+
+.text-btn.danger {
+  color: var(--danger);
+}
+.text-btn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}

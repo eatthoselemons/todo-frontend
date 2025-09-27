@@ -49,17 +49,17 @@ const CompletedToday: React.FC = () => {
       </div>
       <div style={{ padding: "12px" }}>
         <div className="stats" style={{ marginBottom: "10px" }}>
-          <div className="stat started" style={{ color: "#60a5fa" }}>
+          <div className="stat started">
             <div className="value">{startedToday}</div>
             <div className="label">Started</div>
-            <div className="spark" style={{ marginTop: "8px", color: "#60a5fa" }}>
+            <div className="spark">
               <div className="bar" style={{ width: `${Math.min(startedToday * 10, 100)}%` }}></div>
             </div>
           </div>
-          <div className="stat finished" style={{ color: "#34d399" }}>
+          <div className="stat finished">
             <div className="value">{finishedToday}</div>
             <div className="label">Finished</div>
-            <div className="spark" style={{ marginTop: "8px", color: "#34d399" }}>
+            <div className="spark">
               <div className="bar" style={{ width: `${Math.min(finishedToday * 10, 100)}%` }}></div>
             </div>
           </div>

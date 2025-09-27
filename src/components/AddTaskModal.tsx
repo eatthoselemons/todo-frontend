@@ -124,7 +124,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
               autoFocus
             />
             {hasTaskNameError && (
-              <div className="small" style={{ color: "#f87171", marginTop: "6px" }}>
+              <div className="small error-text" style={{ marginTop: "6px" }}>
                 {taskNameError}
               </div>
             )}
