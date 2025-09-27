@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Task, TaskID } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
 
+const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+
 interface TaskWithPath {
   task: Task;
   breadcrumbs: string;
@@ -59,7 +61,7 @@ const TodayUpcoming: React.FC = () => {
     today.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
 
-    const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((due.getTime() - today.getTime()) / MILLISECONDS_PER_DAY);
 
     if (diffDays < 0) return { text: "Overdue", className: "overdue" };
     if (diffDays === 0) return { text: "Today", className: "today" };

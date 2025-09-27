@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Task, BaseState } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
+import { AddTaskModal } from "./AddTaskModal";
+
+const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
 interface TreeNodeProps {
   task: Task;
@@ -8,6 +11,8 @@ interface TreeNodeProps {
   onToggle?: () => void;
   isExpanded: boolean;
   hasChildren: boolean;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
 }
 
 const TreeNode: React.FC<TreeNodeProps> = ({
@@ -16,14 +21,23 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   isExpanded,
   hasChildren,
+  isSelected = false,
+  onSelect,
 }) => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [yamlContent, setYamlContent] = useState("");
-  const { updateTask } = useTaskHooks();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const { updateTask, deleteTask } = useTaskHooks();
 
   const handleStatusClick = async () => {
     task.nextState();
     await updateTask(task);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm(`Delete "${task.text}" and all its children?`)) {
+      await deleteTask(task.id);
+    }
   };
 
   const getDueStatus = (dueDate?: string) => {
@@ -34,7 +48,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     today.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
 
-    const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((due.getTime() - today.getTime()) / MILLISECONDS_PER_DAY);
 
     if (diffDays < 0) return { text: "Overdue", className: "overdue" };
     if (diffDays === 0) return { text: "Today", className: "today" };
@@ -61,6 +75,12 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <>
       <div className={`node ${depth === 0 ? "root" : ""} ${indentClass}`}>
         <div className={`node-row ${stateClass}`}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onSelect?.(e.target.checked)}
+            style={{ marginRight: "8px" }}
+          />
           <div className="chev" onClick={hasChildren ? onToggle : undefined}>
             {hasChildren ? (isExpanded ? "▾" : "▸") : ""}
           </div>
@@ -77,8 +97,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             <span className={`due ${dueStatus.className}`}>{dueStatus.text}</span>
           )}
           <div className="actions">
+            <button className="text-btn" onClick={() => setShowAddModal(true)}>
+              + Child
+            </button>
             <button className="text-btn" onClick={() => setShowDrawer(!showDrawer)}>
               YAML
+            </button>
+            <button className="text-btn" onClick={handleDelete} style={{ color: "#f87171" }}>
+              Delete
             </button>
           </div>
         </div>
@@ -105,6 +131,12 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </div>
         )}
       </div>
+
+      <AddTaskModal
+        parentTaskId={task.id}
+        showAddModal={showAddModal}
+        setShowAddModal={setShowAddModal}
+      />
     </>
   );
 };

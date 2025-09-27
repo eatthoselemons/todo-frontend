@@ -1,16 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { TaskID } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
 import { useTaskContext } from "./context/TaskContext";
+import { CheckboxContext } from "./context/CheckboxContext";
 import TreeView from "./components/TreeView";
 import TodayUpcoming from "./components/TodayUpcoming";
+import CompletedToday from "./components/CompletedToday";
+import { AddTaskModal } from "./components/AddTaskModal";
 import "./styles/app.css";
 
 const App: React.FC = () => {
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
   const [filterText, setFilterText] = useState("");
-  const { getRootTaskIds } = useTaskHooks();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const { getRootTaskIds, deleteTasks } = useTaskHooks();
   const { db } = useTaskContext();
+  const { checkedItems } = useContext(CheckboxContext);
 
   useEffect(() => {
     getRootTaskIds().then(setTaskIds);
@@ -29,12 +34,25 @@ const App: React.FC = () => {
     return () => changes.cancel();
   }, [db, getRootTaskIds]);
 
+  const handleDeleteSelected = async () => {
+    const selectedIds = Object.keys(checkedItems).filter((id) => checkedItems[id]);
+    if (selectedIds.length > 0 && window.confirm(`Delete ${selectedIds.length} task(s)?`)) {
+      await deleteTasks(selectedIds);
+    }
+  };
+
   return (
     <div className="page">
       <div className="header card">
         <div className="badge">Todo App</div>
         <div>Tree Focused</div>
         <div className="spacer"></div>
+        <button className="btn" onClick={() => setShowAddModal(true)}>
+          +
+        </button>
+        <button className="btn" onClick={handleDeleteSelected}>
+          Delete Selected
+        </button>
       </div>
 
       <div className="layout">
@@ -67,8 +85,17 @@ const App: React.FC = () => {
           <TreeView rootTaskIds={taskIds} />
         </div>
 
-        <TodayUpcoming />
+        <div>
+          <CompletedToday />
+          <TodayUpcoming />
+        </div>
       </div>
+
+      <AddTaskModal
+        parentTaskId="root"
+        showAddModal={showAddModal}
+        setShowAddModal={setShowAddModal}
+      />
     </div>
   );
 };

@@ -1,21 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import TreeNode from "./TreeNode";
 import { Task, TaskID } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
+import { CheckboxContext } from "../context/CheckboxContext";
 
 interface TreeViewProps {
   rootTaskIds: TaskID[];
+  expandAll?: boolean;
+  collapseAll?: boolean;
+  expandToLevel?: number;
 }
 
 interface ExpandedState {
   [key: string]: boolean;
 }
 
-const TreeView: React.FC<TreeViewProps> = ({ rootTaskIds }) => {
+const TreeView: React.FC<TreeViewProps> = ({
+  rootTaskIds,
+  expandAll,
+  collapseAll,
+  expandToLevel
+}) => {
   const [tasks, setTasks] = useState<Map<TaskID, Task>>(new Map());
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const { getTaskById, getImmediateChildren } = useTaskHooks();
+  const { checkedItems, setCheckedItems } = useContext(CheckboxContext);
+
+  useEffect(() => {
+    if (expandAll) {
+      const newExpanded: ExpandedState = {};
+      tasks.forEach((_, taskId) => {
+        newExpanded[taskId] = true;
+      });
+      setExpanded(newExpanded);
+    }
+  }, [expandAll, tasks]);
+
+  useEffect(() => {
+    if (collapseAll) {
+      setExpanded({});
+    }
+  }, [collapseAll]);
+
+  useEffect(() => {
+    if (expandToLevel !== undefined) {
+      const newExpanded: ExpandedState = {};
+      const expandRecursive = (taskId: TaskID, currentLevel: number) => {
+        if (currentLevel < expandToLevel) {
+          newExpanded[taskId] = true;
+          const taskChildren = children.get(taskId) || [];
+          taskChildren.forEach(childId => expandRecursive(childId, currentLevel + 1));
+        }
+      };
+      rootTaskIds.forEach(taskId => expandRecursive(taskId, 0));
+      setExpanded(newExpanded);
+    }
+  }, [expandToLevel, rootTaskIds, children]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -67,6 +108,8 @@ const TreeView: React.FC<TreeViewProps> = ({ rootTaskIds }) => {
           onToggle={() => toggleExpand(taskId)}
           isExpanded={isExpanded}
           hasChildren={hasChildren}
+          isSelected={checkedItems[taskId] || false}
+          onSelect={(selected) => setCheckedItems({ ...checkedItems, [taskId]: selected })}
         />
         {isExpanded && taskChildren.map((childId) => renderTask(childId, depth + 1))}
       </React.Fragment>
