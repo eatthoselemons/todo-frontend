@@ -64,14 +64,22 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     }
   };
 
-  const indentClass = depth > 0 ? `indent-${Math.min(depth, 4)}` : "";
   const stateClass = task.internalState !== BaseState.NOT_STARTED ? `is-${task.internalState}` : "";
+  const indentPadding = depth > 0 ? depth * 24 : 0;
+  const chevronMargin = depth > 0 ? depth * 12 : 0;
 
   return (
     <>
-      <div className={`node ${depth === 0 ? "root" : ""} ${indentClass}`}>
-        <div className={`node-row ${stateClass}`}>
-          <div className="chev" onClick={hasChildren ? onToggle : undefined}>
+      <div
+        className={`node ${depth === 0 ? "root" : ""}`}
+        style={depth > 0 ? { paddingLeft: `${indentPadding}px` } : undefined}
+      >
+        <div className={`node-row ${stateClass}`} style={depth > 0 ? { position: 'relative' } : undefined}>
+          <div
+            className="chev"
+            onClick={hasChildren ? onToggle : undefined}
+            style={depth > 0 ? { marginLeft: `${chevronMargin}px` } : undefined}
+          >
             {hasChildren ? (isExpanded ? "▾" : "▸") : ""}
           </div>
           <div

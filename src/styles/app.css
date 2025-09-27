@@ -97,12 +97,7 @@ body {
   user-select: none;
 }
 
-.indent-1 { padding-left: 24px; }
-.indent-2 { padding-left: 48px; }
-.indent-3 { padding-left: 72px; }
-.indent-4 { padding-left: 96px; }
-
-.node[class*="indent-"] .node-row::before {
+.node:not(.root) .node-row::before {
   content: "";
   position: absolute;
   left: 4px;
@@ -112,7 +107,7 @@ body {
   opacity: 0.8;
 }
 
-.node[class*="indent-"] .node-row::after {
+.node:not(.root) .node-row::after {
   content: "";
   position: absolute;
   left: 4px;
@@ -121,11 +116,6 @@ body {
   border-bottom: 2px solid var(--connector);
   opacity: 0.8;
 }
-
-.node.indent-1 .chev { margin-left: 12px; }
-.node.indent-2 .chev { margin-left: 24px; }
-.node.indent-3 .chev { margin-left: 36px; }
-.node.indent-4 .chev { margin-left: 48px; }
 
 .root > .node-row::after {
   content: "";
