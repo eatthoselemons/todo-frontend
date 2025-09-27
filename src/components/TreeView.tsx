@@ -1,8 +1,7 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import TreeNode from "./TreeNode";
 import { Task, TaskID } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
-import { CheckboxContext } from "../context/CheckboxContext";
 
 interface TreeViewProps {
   rootTaskIds: TaskID[];
@@ -25,7 +24,6 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const { getTaskById, getImmediateChildren } = useTaskHooks();
-  const { checkedItems, setCheckedItems } = useContext(CheckboxContext);
 
   useEffect(() => {
     if (expandAll) {
@@ -108,8 +106,6 @@ const TreeView: React.FC<TreeViewProps> = ({
           onToggle={() => toggleExpand(taskId)}
           isExpanded={isExpanded}
           hasChildren={hasChildren}
-          isSelected={checkedItems[taskId] || false}
-          onSelect={(selected) => setCheckedItems({ ...checkedItems, [taskId]: selected })}
         />
         {isExpanded && taskChildren.map((childId) => renderTask(childId, depth + 1))}
       </React.Fragment>

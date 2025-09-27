@@ -11,8 +11,6 @@ interface TreeNodeProps {
   onToggle?: () => void;
   isExpanded: boolean;
   hasChildren: boolean;
-  isSelected?: boolean;
-  onSelect?: (selected: boolean) => void;
 }
 
 const TreeNode: React.FC<TreeNodeProps> = ({
@@ -21,8 +19,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   isExpanded,
   hasChildren,
-  isSelected = false,
-  onSelect,
 }) => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [yamlContent, setYamlContent] = useState("");
@@ -75,12 +71,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <>
       <div className={`node ${depth === 0 ? "root" : ""} ${indentClass}`}>
         <div className={`node-row ${stateClass}`}>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onSelect?.(e.target.checked)}
-            style={{ marginRight: "8px" }}
-          />
           <div className="chev" onClick={hasChildren ? onToggle : undefined}>
             {hasChildren ? (isExpanded ? "▾" : "▸") : ""}
           </div>
