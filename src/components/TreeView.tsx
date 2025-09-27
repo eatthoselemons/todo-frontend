@@ -5,9 +5,9 @@ import useTaskHooks from "../hooks/useTaskHooks";
 
 interface TreeViewProps {
   rootTaskIds: TaskID[];
-  expandAll?: boolean;
-  collapseAll?: boolean;
-  expandToLevel?: number;
+  expandAllTrigger?: number;
+  collapseAllTrigger?: number;
+  expandToLevelTrigger?: {level: number, trigger: number} | null;
 }
 
 interface ExpandedState {
@@ -16,9 +16,9 @@ interface ExpandedState {
 
 const TreeView: React.FC<TreeViewProps> = ({
   rootTaskIds,
-  expandAll,
-  collapseAll,
-  expandToLevel
+  expandAllTrigger,
+  collapseAllTrigger,
+  expandToLevelTrigger
 }) => {
   const [tasks, setTasks] = useState<Map<TaskID, Task>>(new Map());
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
@@ -26,26 +26,45 @@ const TreeView: React.FC<TreeViewProps> = ({
   const { getTaskById, getImmediateChildren } = useTaskHooks();
 
   useEffect(() => {
-    if (expandAll) {
-      const newExpanded: ExpandedState = {};
-      tasks.forEach((_, taskId) => {
-        newExpanded[taskId] = true;
-      });
-      setExpanded(newExpanded);
+    if (expandAllTrigger && expandAllTrigger > 0) {
+      const loadAllTasksRecursively = async () => {
+        const taskMap = new Map<TaskID, Task>();
+        const childrenMap = new Map<TaskID, TaskID[]>();
+        const expandedMap: ExpandedState = {};
+
+        const loadRecursive = async (taskId: TaskID) => {
+          const task = await getTaskById(taskId);
+          if (task) {
+            taskMap.set(taskId, task);
+            expandedMap[taskId] = true;
+            const taskChildren = await getImmediateChildren(taskId);
+            const childIds = taskChildren.map((t) => t.id);
+            childrenMap.set(taskId, childIds);
+            await Promise.all(childIds.map(loadRecursive));
+          }
+        };
+
+        await Promise.all(rootTaskIds.map(loadRecursive));
+        setTasks(taskMap);
+        setChildren(childrenMap);
+        setExpanded(expandedMap);
+      };
+
+      loadAllTasksRecursively();
     }
-  }, [expandAll, tasks]);
+  }, [expandAllTrigger, rootTaskIds, getTaskById, getImmediateChildren]);
 
   useEffect(() => {
-    if (collapseAll) {
+    if (collapseAllTrigger && collapseAllTrigger > 0) {
       setExpanded({});
     }
-  }, [collapseAll]);
+  }, [collapseAllTrigger]);
 
   useEffect(() => {
-    if (expandToLevel !== undefined) {
+    if (expandToLevelTrigger && expandToLevelTrigger.trigger > 0) {
       const newExpanded: ExpandedState = {};
       const expandRecursive = (taskId: TaskID, currentLevel: number) => {
-        if (currentLevel < expandToLevel) {
+        if (currentLevel < expandToLevelTrigger.level) {
           newExpanded[taskId] = true;
           const taskChildren = children.get(taskId) || [];
           taskChildren.forEach(childId => expandRecursive(childId, currentLevel + 1));
@@ -54,7 +73,7 @@ const TreeView: React.FC<TreeViewProps> = ({
       rootTaskIds.forEach(taskId => expandRecursive(taskId, 0));
       setExpanded(newExpanded);
     }
-  }, [expandToLevel, rootTaskIds, children]);
+  }, [expandToLevelTrigger]);
 
   useEffect(() => {
     const loadTasks = async () => {

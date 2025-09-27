@@ -13,14 +13,19 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showLevelModal, setShowLevelModal] = useState(false);
+  const [buttonRef, setButtonRef] = React.useState<HTMLButtonElement | null>(null);
 
   return (
     <>
-      <button className="btn" onClick={() => setShowMenu(!showMenu)}>
+      <button
+        ref={setButtonRef}
+        className="btn"
+        onClick={() => setShowMenu(!showMenu)}
+      >
         Density
       </button>
 
-      {showMenu && (
+      {showMenu && buttonRef && (
         <>
           <div
             style={{
@@ -30,14 +35,16 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
               right: 0,
               bottom: 0,
               zIndex: 999,
+              background: "transparent",
             }}
             onClick={() => setShowMenu(false)}
           />
           <div
             style={{
-              position: "absolute",
-              top: "60px",
-              right: "20px",
+              position: "fixed",
+              top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
+              left: window.innerWidth < 768 ? "50%" : `${buttonRef.getBoundingClientRect().left}px`,
+              transform: window.innerWidth < 768 ? "translateX(-50%)" : "none",
               zIndex: 1000,
             }}
           >
@@ -74,7 +81,7 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
         </>
       )}
 
-      {showLevelModal && (
+      {showLevelModal && buttonRef && (
         <>
           <div
             style={{
@@ -83,52 +90,61 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
               left: 0,
               right: 0,
               bottom: 0,
-              background: "rgba(0,0,0,0.5)",
               zIndex: 1001,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
             }}
             onClick={() => setShowLevelModal(false)}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
+              left: `${buttonRef.getBoundingClientRect().left}px`,
+              zIndex: 1002,
+            }}
           >
             <div
               className="modal-card"
               onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: "420px" }}
+              style={{ maxWidth: "420px", minWidth: "320px" }}
             >
-              <div className="row" style={{ alignItems: "center" }}>
+              <div className="row" style={{ alignItems: "center", marginBottom: "16px" }}>
                 <div className="modal-title">Expand to level</div>
                 <div className="spacer"></div>
                 <span
                   className="muted"
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: "pointer", fontSize: "20px" }}
                   onClick={() => setShowLevelModal(false)}
                 >
                   ✕
                 </span>
               </div>
+              <div style={{ marginBottom: "16px", fontSize: "13px", color: "var(--muted)" }}>
+                Choose how many levels of the tree to expand. First click selects and closes.
+              </div>
               <div className="level-grid" style={{ marginTop: "8px" }}>
                 {[1, 2, 3, 4, 5].map((level) => (
-                  <div
+                  <button
                     key={level}
-                    className="level-btn"
+                    className="btn"
+                    style={{ padding: "12px" }}
                     onClick={() => {
                       onExpandToLevel(level);
                       setShowLevelModal(false);
                     }}
                   >
                     {level}
-                  </div>
+                  </button>
                 ))}
-                <div
-                  className="level-btn"
+                <button
+                  className="btn"
+                  style={{ padding: "12px" }}
                   onClick={() => {
                     onExpandAll();
                     setShowLevelModal(false);
                   }}
                 >
                   All
-                </div>
+                </button>
               </div>
             </div>
           </div>

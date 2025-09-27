@@ -14,9 +14,9 @@ const App: React.FC = () => {
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
   const [filterText, setFilterText] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [expandAll, setExpandAll] = useState(false);
-  const [collapseAll, setCollapseAll] = useState(false);
-  const [expandToLevel, setExpandToLevel] = useState<number | undefined>(undefined);
+  const [expandAllTrigger, setExpandAllTrigger] = useState(0);
+  const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
+  const [expandToLevelTrigger, setExpandToLevelTrigger] = useState<{level: number, trigger: number} | null>(null);
   const { getRootTaskIds } = useTaskHooks();
   const { db } = useTaskContext();
 
@@ -44,9 +44,9 @@ const App: React.FC = () => {
         <div>Tree Focused</div>
         <div className="spacer"></div>
         <DensityMenu
-          onExpandAll={() => setExpandAll(!expandAll)}
-          onCollapseAll={() => setCollapseAll(!collapseAll)}
-          onExpandToLevel={(level) => setExpandToLevel(level)}
+          onExpandAll={() => setExpandAllTrigger(prev => prev + 1)}
+          onCollapseAll={() => setCollapseAllTrigger(prev => prev + 1)}
+          onExpandToLevel={(level) => setExpandToLevelTrigger(prev => ({level, trigger: (prev?.trigger || 0) + 1}))}
         />
         <button className="btn" onClick={() => setShowAddModal(true)}>
           + Add Task
@@ -82,9 +82,9 @@ const App: React.FC = () => {
 
           <TreeView
             rootTaskIds={taskIds}
-            expandAll={expandAll}
-            collapseAll={collapseAll}
-            expandToLevel={expandToLevel}
+            expandAllTrigger={expandAllTrigger}
+            collapseAllTrigger={collapseAllTrigger}
+            expandToLevelTrigger={expandToLevelTrigger}
           />
         </div>
 
