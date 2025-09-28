@@ -62,23 +62,41 @@ const TreeView: React.FC<TreeViewProps> = ({
 
   useEffect(() => {
     if (expandToLevelTrigger && expandToLevelTrigger.trigger > 0) {
-      const newExpanded: ExpandedState = {};
-      const expandRecursive = (taskId: TaskID, currentLevel: number) => {
-        if (currentLevel < expandToLevelTrigger.level) {
-          newExpanded[taskId] = true;
-          const taskChildren = children.get(taskId) || [];
-          taskChildren.forEach(childId => expandRecursive(childId, currentLevel + 1));
-        }
+      const loadAndExpandToLevel = async () => {
+        const taskMap = new Map<TaskID, Task>();
+        const childrenMap = new Map<TaskID, TaskID[]>();
+        const newExpanded: ExpandedState = {};
+
+        const loadRecursive = async (taskId: TaskID, currentLevel: number) => {
+          const task = await getTaskById(taskId);
+          if (task) {
+            taskMap.set(taskId, task);
+            const taskChildren = await getImmediateChildren(taskId);
+            const childIds = taskChildren.map((t) => t.id);
+            childrenMap.set(taskId, childIds);
+
+            if (currentLevel < expandToLevelTrigger.level - 1) {
+              newExpanded[taskId] = true;
+              await Promise.all(childIds.map(childId => loadRecursive(childId, currentLevel + 1)));
+            }
+          }
+        };
+
+        await Promise.all(rootTaskIds.map(taskId => loadRecursive(taskId, 0)));
+        setTasks(taskMap);
+        setChildren(childrenMap);
+        setExpanded(newExpanded);
       };
-      rootTaskIds.forEach(taskId => expandRecursive(taskId, 0));
-      setExpanded(newExpanded);
+
+      loadAndExpandToLevel();
     }
-  }, [expandToLevelTrigger]);
+  }, [expandToLevelTrigger, rootTaskIds, getTaskById, getImmediateChildren]);
 
   useEffect(() => {
     const loadTasks = async () => {
       const taskMap = new Map<TaskID, Task>();
       const childrenMap = new Map<TaskID, TaskID[]>();
+      const currentExpanded = expanded;
 
       const loadTaskAndChildren = async (taskId: TaskID) => {
         const task = await getTaskById(taskId);
@@ -88,7 +106,7 @@ const TreeView: React.FC<TreeViewProps> = ({
           const childIds = taskChildren.map((t) => t.id);
           childrenMap.set(taskId, childIds);
 
-          if (expanded[taskId]) {
+          if (currentExpanded[taskId]) {
             await Promise.all(childIds.map(loadTaskAndChildren));
           }
         }
@@ -100,7 +118,7 @@ const TreeView: React.FC<TreeViewProps> = ({
     };
 
     loadTasks();
-  }, [rootTaskIds, expanded]);
+  }, [rootTaskIds, getTaskById, getImmediateChildren]);
 
   const toggleExpand = (taskId: TaskID) => {
     setExpanded((prev) => ({

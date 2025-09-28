@@ -27,43 +27,58 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
 
       {showMenu && buttonRef && (
         <>
-          <div className="overlay" onClick={() => setShowMenu(false)} />
+          <div className="overlay-dark" onClick={() => setShowMenu(false)} />
           <div
-            className="popover-container"
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
             style={{
+              position: "fixed",
               top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
-              left: window.innerWidth < 768 ? "50%" : `${buttonRef.getBoundingClientRect().left}px`,
-              transform: window.innerWidth < 768 ? "translateX(-50%)" : "none",
+              left: `${buttonRef.getBoundingClientRect().left}px`,
+              zIndex: 1002
             }}
           >
-            <div className="popover">
-              <div
-                className="item"
+            <div className="modal-header">
+              <div className="modal-title">Density Options</div>
+              <div className="spacer"></div>
+              <span
+                className="muted modal-close"
+                onClick={() => setShowMenu(false)}
+              >
+                ✕
+              </span>
+            </div>
+            <div className="modal-description">
+              Choose how to display the task tree.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button
+                className="btn"
                 onClick={() => {
                   onExpandAll();
                   setShowMenu(false);
                 }}
               >
                 Expand all
-              </div>
-              <div
-                className="item"
+              </button>
+              <button
+                className="btn"
                 onClick={() => {
                   onCollapseAll();
                   setShowMenu(false);
                 }}
               >
                 Collapse all
-              </div>
-              <div
-                className="item"
+              </button>
+              <button
+                className="btn"
                 onClick={() => {
                   setShowLevelModal(true);
                   setShowMenu(false);
                 }}
               >
                 Expand to level…
-              </div>
+              </button>
             </div>
           </div>
         </>
@@ -71,51 +86,52 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
 
       {showLevelModal && buttonRef && (
         <>
-          <div className="overlay" onClick={() => setShowLevelModal(false)} style={{ zIndex: 1001 }} />
+          <div className="overlay-dark" onClick={() => setShowLevelModal(false)} />
           <div
-            className="modal-container"
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
             style={{
+              position: "fixed",
               top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
               left: `${buttonRef.getBoundingClientRect().left}px`,
+              zIndex: 1002
             }}
           >
-            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className="modal-title">Expand to level</div>
-                <div className="spacer"></div>
-                <span
-                  className="muted modal-close"
-                  onClick={() => setShowLevelModal(false)}
-                >
-                  ✕
-                </span>
-              </div>
-              <div className="modal-description">
-                Choose how many levels of the tree to expand. First click selects and closes.
-              </div>
-              <div className="level-grid">
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <button
-                    key={level}
-                    className="btn"
-                    onClick={() => {
-                      onExpandToLevel(level);
-                      setShowLevelModal(false);
-                    }}
-                  >
-                    {level}
-                  </button>
-                ))}
+            <div className="modal-header">
+              <div className="modal-title">Expand to level</div>
+              <div className="spacer"></div>
+              <span
+                className="muted modal-close"
+                onClick={() => setShowLevelModal(false)}
+              >
+                ✕
+              </span>
+            </div>
+            <div className="modal-description">
+              Choose how many levels of the tree to expand. First click selects and closes.
+            </div>
+            <div className="level-grid">
+              {[1, 2, 3, 4, 5].map((level) => (
                 <button
+                  key={level}
                   className="btn"
                   onClick={() => {
-                    onExpandAll();
+                    onExpandToLevel(level);
                     setShowLevelModal(false);
                   }}
                 >
-                  All
+                  {level}
                 </button>
-              </div>
+              ))}
+              <button
+                className="btn"
+                onClick={() => {
+                  onExpandAll();
+                  setShowLevelModal(false);
+                }}
+              >
+                All
+              </button>
             </div>
           </div>
         </>
