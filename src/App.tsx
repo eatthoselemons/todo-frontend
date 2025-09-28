@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { TaskID } from "./domain/Task";
+import React, { useEffect, useState, useCallback } from "react";
+import { TaskID, BaseState } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
 import { useTaskContext } from "./context/TaskContext";
 import TreeView from "./components/TreeView";
@@ -12,17 +12,50 @@ import "./styles/app.css";
 
 const App: React.FC = () => {
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
+  const [doneTaskIds, setDoneTaskIds] = useState<TaskID[]>([]);
+  const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
   const [filterText, setFilterText] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandAllTrigger, setExpandAllTrigger] = useState(0);
   const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
   const [expandToLevelTrigger, setExpandToLevelTrigger] = useState<{level: number, trigger: number} | null>(null);
-  const { getRootTaskIds } = useTaskHooks();
+  const { getRootTaskIds, getTaskById } = useTaskHooks();
   const { db } = useTaskContext();
 
-  useEffect(() => {
-    getRootTaskIds().then(setTaskIds);
+  // Memoized event handlers
+  const handleExpandAll = useCallback(() => setExpandAllTrigger(prev => prev + 1), []);
+  const handleCollapseAll = useCallback(() => setCollapseAllTrigger(prev => prev + 1), []);
+  const handleExpandToLevel = useCallback((level: number) => {
+    setExpandToLevelTrigger(prev => ({level, trigger: (prev?.trigger || 0) + 1}));
   }, []);
+  const handleShowAddModal = useCallback(() => setShowAddModal(true), []);
+  const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterText(e.target.value);
+  }, []);
+
+  useEffect(() => {
+    const loadAndSeparateTasks = async () => {
+      const allTaskIds = await getRootTaskIds();
+      const activeTasks: TaskID[] = [];
+      const doneTasks: TaskID[] = [];
+
+      for (const taskId of allTaskIds) {
+        const task = await getTaskById(taskId);
+        if (task) {
+          if (task.internalState === BaseState.DONE) {
+            doneTasks.push(taskId);
+          } else {
+            activeTasks.push(taskId);
+          }
+        }
+      }
+
+      setTaskIds(activeTasks);
+      setDoneTaskIds(doneTasks);
+    };
+
+    loadAndSeparateTasks();
+  }, [getRootTaskIds, getTaskById]);
 
   useEffect(() => {
     const changes = db
@@ -30,12 +63,28 @@ const App: React.FC = () => {
         since: "now",
         live: true,
       })
-      .on("change", () => {
-        getRootTaskIds().then(setTaskIds);
+      .on("change", async () => {
+        const allTaskIds = await getRootTaskIds();
+        const activeTasks: TaskID[] = [];
+        const doneTasks: TaskID[] = [];
+
+        for (const taskId of allTaskIds) {
+          const task = await getTaskById(taskId);
+          if (task) {
+            if (task.internalState === BaseState.DONE) {
+              doneTasks.push(taskId);
+            } else {
+              activeTasks.push(taskId);
+            }
+          }
+        }
+
+        setTaskIds(activeTasks);
+        setDoneTaskIds(doneTasks);
       });
 
     return () => changes.cancel();
-  }, [db, getRootTaskIds]);
+  }, [db, getRootTaskIds, getTaskById]);
 
   return (
     <div className="page">
@@ -44,47 +93,62 @@ const App: React.FC = () => {
         <div>Tree Focused</div>
         <div className="spacer"></div>
         <DensityMenu
-          onExpandAll={() => setExpandAllTrigger(prev => prev + 1)}
-          onCollapseAll={() => setCollapseAllTrigger(prev => prev + 1)}
-          onExpandToLevel={(level) => setExpandToLevelTrigger(prev => ({level, trigger: (prev?.trigger || 0) + 1}))}
+          onExpandAll={handleExpandAll}
+          onCollapseAll={handleCollapseAll}
+          onExpandToLevel={handleExpandToLevel}
         />
-        <button className="btn" onClick={() => setShowAddModal(true)}>
+        <button className="btn" onClick={handleShowAddModal}>
           + Add Task
         </button>
       </div>
 
       <div className="layout">
         <div className="card">
+          <div className="tabs">
+            <button
+              className={`tab ${activeTab === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveTab('active')}
+            >
+              Active Tasks ({taskIds.length})
+            </button>
+            <button
+              className={`tab ${activeTab === 'done' ? 'active' : ''}`}
+              onClick={() => setActiveTab('done')}
+            >
+              Done ({doneTaskIds.length})
+            </button>
+            <div className="spacer"></div>
+            {activeTab === 'active' && (
+              <div className="legend small muted">
+                <span className="status-chip status-not_started">
+                  <span className="dot"></span> Not
+                </span>
+                <span className="status-chip status-in_progress">
+                  <span className="dot"></span> Progress
+                </span>
+                <span className="status-chip status-blocked">
+                  <span className="dot"></span> Blocked
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="toolbar">
             <input
               type="search"
               style={{ padding: "6px 10px", width: "260px" }}
-              placeholder="Filter or jump (e.g. 'sewing tote')"
+              placeholder={`Filter ${activeTab === 'active' ? 'active tasks' : 'completed tasks'}...`}
               value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
+              onChange={handleFilterChange}
             />
-            <div className="spacer"></div>
-            <div className="legend small muted">
-              <span className="status-chip status-not_started">
-                <span className="dot"></span> Not
-              </span>
-              <span className="status-chip status-in_progress">
-                <span className="dot"></span> Progress
-              </span>
-              <span className="status-chip status-blocked">
-                <span className="dot"></span> Blocked
-              </span>
-              <span className="status-chip status-done">
-                <span className="dot"></span> Done
-              </span>
-            </div>
           </div>
 
           <TreeView
-            rootTaskIds={taskIds}
+            rootTaskIds={activeTab === 'active' ? taskIds : doneTaskIds}
             expandAllTrigger={expandAllTrigger}
             collapseAllTrigger={collapseAllTrigger}
             expandToLevelTrigger={expandToLevelTrigger}
+            loadStrategy={activeTab === 'active' ? 'full' : 'lazy'}
           />
         </div>
 

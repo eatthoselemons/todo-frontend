@@ -66,6 +66,35 @@ body {
 .btn:hover { background: rgba(255,255,255,0.04); }
 .btn.primary { border-color: var(--accent); color: var(--accent); }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 8px 8px 0 8px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 .toolbar { padding: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .legend { display: flex; gap: 10px; align-items: center; }
 
