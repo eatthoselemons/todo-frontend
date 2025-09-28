@@ -299,3 +299,136 @@ input[type="text"]::placeholder, input[type="search"]::placeholder {
   color: var(--danger);
   border-color: var(--danger);
 }
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.overlay-dark {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popover-container {
+  position: fixed;
+  z-index: 1000;
+}
+
+.modal-container {
+  position: fixed;
+  z-index: 1002;
+}
+
+.modal-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+  max-width: 420px;
+  min-width: 320px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-weight: 600;
+}
+
+.modal-close {
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.modal-description {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.level-grid .btn {
+  padding: 12px;
+}
+
+.history-day-row {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.history-day-label {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.history-bar {
+  height: 8px;
+  flex: 0 0 120px;
+  overflow: hidden;
+  border-radius: 2px;
+  position: relative;
+}
+
+.history-bar.ml {
+  margin-left: 8px;
+}
+
+.history-bar .bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 8px;
+}
+
+.input-container {
+  margin-bottom: 16px;
+}
+
+.input-full {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.input-full.error {
+  border-color: var(--danger);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.stats-container {
+  margin-bottom: 10px;
+}

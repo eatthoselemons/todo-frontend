@@ -27,25 +27,13 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
 
       {showMenu && buttonRef && (
         <>
+          <div className="overlay" onClick={() => setShowMenu(false)} />
           <div
+            className="popover-container"
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 999,
-              background: "transparent",
-            }}
-            onClick={() => setShowMenu(false)}
-          />
-          <div
-            style={{
-              position: "fixed",
               top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
               left: window.innerWidth < 768 ? "50%" : `${buttonRef.getBoundingClientRect().left}px`,
               transform: window.innerWidth < 768 ? "translateX(-50%)" : "none",
-              zIndex: 1000,
             }}
           >
             <div className="popover">
@@ -83,50 +71,33 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
 
       {showLevelModal && buttonRef && (
         <>
+          <div className="overlay" onClick={() => setShowLevelModal(false)} style={{ zIndex: 1001 }} />
           <div
+            className="modal-container"
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 1001,
-            }}
-            onClick={() => setShowLevelModal(false)}
-          />
-          <div
-            style={{
-              position: "fixed",
               top: `${buttonRef.getBoundingClientRect().bottom + 4}px`,
               left: `${buttonRef.getBoundingClientRect().left}px`,
-              zIndex: 1002,
             }}
           >
-            <div
-              className="modal-card"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: "420px", minWidth: "320px" }}
-            >
-              <div className="row" style={{ alignItems: "center", marginBottom: "16px" }}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
                 <div className="modal-title">Expand to level</div>
                 <div className="spacer"></div>
                 <span
-                  className="muted"
-                  style={{ cursor: "pointer", fontSize: "20px" }}
+                  className="muted modal-close"
                   onClick={() => setShowLevelModal(false)}
                 >
                   ✕
                 </span>
               </div>
-              <div style={{ marginBottom: "16px", fontSize: "13px", color: "var(--muted)" }}>
+              <div className="modal-description">
                 Choose how many levels of the tree to expand. First click selects and closes.
               </div>
-              <div className="level-grid" style={{ marginTop: "8px" }}>
+              <div className="level-grid">
                 {[1, 2, 3, 4, 5].map((level) => (
                   <button
                     key={level}
                     className="btn"
-                    style={{ padding: "12px" }}
                     onClick={() => {
                       onExpandToLevel(level);
                       setShowLevelModal(false);
@@ -137,7 +108,6 @@ const DensityMenu: React.FC<DensityMenuProps> = ({
                 ))}
                 <button
                   className="btn"
-                  style={{ padding: "12px" }}
                   onClick={() => {
                     onExpandAll();
                     setShowLevelModal(false);

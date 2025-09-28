@@ -48,7 +48,7 @@ const CompletedToday: React.FC = () => {
         <div className="spacer"></div>
       </div>
       <div style={{ padding: "12px" }}>
-        <div className="stats" style={{ marginBottom: "10px" }}>
+        <div className="stats stats-container">
           <div className="stat started">
             <div className="value">{startedToday}</div>
             <div className="label">Started</div>

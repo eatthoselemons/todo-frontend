@@ -76,51 +76,18 @@ const History: React.FC = () => {
         </div>
         <div style={{ display: "grid", gap: "6px" }}>
           {weekStats.map((stat) => (
-            <div className="row small" key={stat.day} style={{ alignItems: "center" }}>
-              <span style={{ width: "60px", flexShrink: 0 }} className="muted">
-                {stat.day}
-              </span>
-              <div
-                className="history-bar-started"
-                style={{
-                  height: "8px",
-                  flex: "0 0 120px",
-                  overflow: "hidden",
-                  borderRadius: "2px",
-                  position: "relative",
-                }}
-              >
+            <div className="history-day-row" key={stat.day}>
+              <span className="history-day-label muted">{stat.day}</span>
+              <div className="history-bar history-bar-started">
                 <div
                   className="bar"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    height: "8px",
-                    width: `${Math.min((stat.started / maxCount) * 100, 100)}%`,
-                  }}
+                  style={{ width: `${Math.min((stat.started / maxCount) * 100, 100)}%` }}
                 ></div>
               </div>
-              <div
-                className="history-bar-finished"
-                style={{
-                  height: "8px",
-                  flex: "0 0 120px",
-                  marginLeft: "8px",
-                  overflow: "hidden",
-                  borderRadius: "2px",
-                  position: "relative",
-                }}
-              >
+              <div className="history-bar history-bar-finished ml">
                 <div
                   className="bar"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    height: "8px",
-                    width: `${Math.min((stat.finished / maxCount) * 100, 100)}%`,
-                  }}
+                  style={{ width: `${Math.min((stat.finished / maxCount) * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
