@@ -210,6 +210,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
   const [checkingDb, setCheckingDb] = useState(false);
   const [rootTasksPreview, setRootTasksPreview] = useState<Array<{id: string; text: string}>>([]);
   const [tasksDiagError, setTasksDiagError] = useState<string | null>(null);
+  const [dangerInProgress, setDangerInProgress] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -260,6 +261,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
       await listRootTasks();
     } catch (e: any) {
       setTasksDiagError(e?.message || String(e));
+    }
+  };
+
+  const resetDatabase = async () => {
+    if (!window.confirm('This will delete ALL data in the local database for this app on this browser. Continue?')) return;
+    setDangerInProgress(true);
+    try {
+      await db!.destroy();
+      // Reload to reinitialize providers and DB instance
+      window.location.reload();
+    } catch (e: any) {
+      setTasksDiagError(e?.message || String(e));
+    } finally {
+      setDangerInProgress(false);
     }
   };
 
@@ -351,6 +366,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
                 <div css={statLabel}>Tasks Done</div>
               </div>
             </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div css={section}>
+            <div css={sectionTitle}>Danger Zone</div>
+            <div className="small muted" style={{ marginBottom: 8 }}>
+              Irreversible actions for troubleshooting storage or state issues.
+            </div>
+            <button className="btn danger" onClick={resetDatabase} disabled={dangerInProgress}>
+              {dangerInProgress ? 'Resetting…' : 'Reset Local Database'}
+            </button>
           </div>
 
           {/* Rewards Settings */}
