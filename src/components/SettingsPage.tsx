@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { css } from "@emotion/react";
 import { useRewardsContext } from "../context/RewardsContext";
+import useTaskHooks from "../hooks/useTaskHooks";
+import { Task } from "../domain/Task";
 import { useTaskContext } from "../context/TaskContext";
 
 interface SettingsPageProps {
@@ -200,11 +202,14 @@ const statLabel = css`
 export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) => {
   const { settings, progress, updateSettings } = useRewardsContext();
   const { db } = useTaskContext();
+  const { getRootTasks, createTask } = useTaskHooks();
 
   // DB diagnostics
   const [dbInfo, setDbInfo] = useState<{ adapter?: string; doc_count?: number } | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [checkingDb, setCheckingDb] = useState(false);
+  const [rootTasksPreview, setRootTasksPreview] = useState<Array<{id: string; text: string}>>([]);
+  const [tasksDiagError, setTasksDiagError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -234,6 +239,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
       setDbError(e?.message || String(e));
     } finally {
       setCheckingDb(false);
+    }
+  };
+
+  const listRootTasks = async () => {
+    setTasksDiagError(null);
+    try {
+      const tasks = await getRootTasks();
+      setRootTasksPreview(tasks.map(t => ({ id: t.id as any, text: t.text })));
+    } catch (e: any) {
+      setTasksDiagError(e?.message || String(e));
+    }
+  };
+
+  const createSampleRootTask = async () => {
+    setTasksDiagError(null);
+    try {
+      const sample = new Task(`Sample Task ${new Date().toLocaleTimeString()}`);
+      await createTask(sample, "root" as any);
+      await listRootTasks();
+    } catch (e: any) {
+      setTasksDiagError(e?.message || String(e));
     }
   };
 
@@ -280,12 +306,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
               <button className="btn" onClick={runDbHealthCheck} disabled={checkingDb}>
                 {checkingDb ? 'Checking…' : 'Run DB Health Check'}
               </button>
+              <button className="btn" onClick={listRootTasks}>
+                List Root Tasks
+              </button>
+              <button className="btn" onClick={createSampleRootTask}>
+                Create Sample Root Task
+              </button>
               {dbError && (
                 <div className="small error-text" style={{ marginLeft: 8 }}>
                   {dbError}
                 </div>
               )}
             </div>
+            {tasksDiagError && (
+              <div className="small error-text" style={{ marginTop: 8 }}>
+                {tasksDiagError}
+              </div>
+            )}
+            {rootTasksPreview.length > 0 && (
+              <div className="small" style={{ marginTop: 8 }}>
+                Root tasks ({rootTasksPreview.length}): {rootTasksPreview.map(t => t.text || '(untitled)').join(', ')}
+              </div>
+            )}
             <div className="small muted" style={{ marginTop: 8 }}>
               Tip: If this fails, your browser/storage settings (e.g. private mode,
               blocked cookies, or disabled IndexedDB) may prevent saving tasks.
