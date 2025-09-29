@@ -1,9 +1,11 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { css } from "@emotion/react";
 import { Task, BaseState } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
 import { AddTaskModal } from "./AddTaskModal";
+import { SparkleAnimation } from "./SparkleAnimation";
+import { useRewardsContext } from "../context/RewardsContext";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -13,6 +15,8 @@ interface TreeNodeProps {
   onToggle?: () => void;
   isExpanded: boolean;
   hasChildren: boolean;
+  onTaskComplete?: (task: Task) => void;
+  onMilestone?: (label: string, value: number) => void;
 }
 
 // Dynamic styles that change based on depth
@@ -51,11 +55,17 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   isExpanded,
   hasChildren,
+  onTaskComplete,
+  onMilestone,
 }) => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [yamlContent, setYamlContent] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sparkleTrigger, setSparkleTrigger] = useState(0);
+  const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
+  const statusChipRef = useRef<HTMLDivElement>(null);
   const { updateTask, deleteTask } = useTaskHooks();
+  const { settings, addPoints, progress } = useRewardsContext();
 
   // Memoized computations
   const dueStatus = useMemo(() => {
@@ -89,10 +99,45 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     [task.internalState]
   );
 
-  const handleStatusClick = useCallback(async () => {
+  const handleStatusClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
+    const previousState = task.internalState;
     task.nextState();
-    await updateTask(task);
-  }, [task, updateTask]);
+
+    // Trigger sparkles if completing task and rewards are enabled
+    if (task.internalState === BaseState.DONE && settings.enabled && settings.animations) {
+      // Get position of the status chip for sparkle origin
+      const rect = e.currentTarget.getBoundingClientRect();
+      setSparklePos({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      });
+      setSparkleTrigger(prev => prev + 1);
+
+      // Add points for task completion
+      await addPoints(10);
+
+      // Check for milestones and trigger liquid progress
+      const nextTotalTasks = progress.totalTasks + 1;
+      const nextLevel = Math.floor((progress.points + 10) / 100) + 1;
+
+      if (onMilestone && (nextTotalTasks % 5 === 0 || nextLevel > progress.level)) {
+        if (nextLevel > progress.level) {
+          onMilestone(`Level ${nextLevel}!`, 100);
+        } else {
+          onMilestone(`${nextTotalTasks} Tasks!`, Math.min(100, (nextTotalTasks % 10) * 20));
+        }
+      }
+    }
+
+    // Check if task is being marked as done and it's a root task
+    if (task.internalState === BaseState.DONE && depth === 0 && onTaskComplete) {
+      // Trigger grace period instead of immediate update
+      onTaskComplete(task);
+    } else {
+      // Normal update for non-root or non-complete transitions
+      await updateTask(task);
+    }
+  }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, settings.animations, addPoints, progress]);
 
   const handleDelete = useCallback(async () => {
     if (window.confirm(`Delete "${task.text}" and all its children?`)) {
@@ -177,6 +222,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />
+
+      {settings.enabled && settings.animations && (
+        <SparkleAnimation
+          trigger={sparkleTrigger}
+          intensity={settings.intensity === 'minimal' ? 'minimal' : settings.intensity === 'extra' ? 'extra' : 'standard'}
+          x={sparklePos.x}
+          y={sparklePos.y}
+        />
+      )}
     </>
   );
 };

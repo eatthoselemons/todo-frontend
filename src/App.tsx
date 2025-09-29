@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { TaskID, BaseState } from "./domain/Task";
+import { TaskID, BaseState, Task } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
 import { useTaskContext } from "./context/TaskContext";
 import TreeView from "./components/TreeView";
@@ -8,6 +8,10 @@ import CompletedToday from "./components/CompletedToday";
 import History from "./components/History";
 import DensityMenu from "./components/DensityMenu";
 import { AddTaskModal } from "./components/AddTaskModal";
+import { GracePeriodToast } from "./components/GracePeriodToast";
+import { SettingsPage } from "./components/SettingsPage";
+import { LiquidProgressAnimation } from "./components/LiquidProgressAnimation";
+import { useRewardsContext } from "./context/RewardsContext";
 import "./styles/app.css";
 
 const App: React.FC = () => {
@@ -16,11 +20,17 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
   const [filterText, setFilterText] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [expandAllTrigger, setExpandAllTrigger] = useState(0);
   const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
   const [expandToLevelTrigger, setExpandToLevelTrigger] = useState<{level: number, trigger: number} | null>(null);
-  const { getRootTaskIds, getTaskById } = useTaskHooks();
+  const [pendingCompletions, setPendingCompletions] = useState<Array<{id: string; task: Task; message: string}>>([]);
+  const [showLiquidProgress, setShowLiquidProgress] = useState(false);
+  const [liquidProgressValue, setLiquidProgressValue] = useState(0);
+  const [liquidProgressLabel, setLiquidProgressLabel] = useState("");
+  const { getRootTaskIds, getTaskById, updateTask } = useTaskHooks();
   const { db } = useTaskContext();
+  const { settings, progress } = useRewardsContext();
 
   // Memoized event handlers
   const handleExpandAll = useCallback(() => setExpandAllTrigger(prev => prev + 1), []);
@@ -32,6 +42,71 @@ const App: React.FC = () => {
   const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterText(e.target.value);
   }, []);
+
+  // Handle milestone animation
+  const handleMilestone = useCallback((label: string, value: number) => {
+    if (settings.enabled && settings.animations) {
+      setLiquidProgressLabel(label);
+      setLiquidProgressValue(value);
+      setShowLiquidProgress(true);
+    }
+  }, [settings.enabled, settings.animations]);
+
+  // Handle task completion with grace period
+  const handleTaskComplete = useCallback((task: Task) => {
+    // Add to pending completions
+    const toastId = `toast-${Date.now()}-${task.id}`;
+    setPendingCompletions(prev => [...prev, {
+      id: toastId,
+      task,
+      message: `"${task.text}" moving to Done`
+    }]);
+  }, []);
+
+  // Handle undo from grace period
+  const handleUndo = useCallback((taskId: TaskID) => {
+    // Find the task and revert its state
+    const pending = pendingCompletions.find(p => p.task.id === taskId);
+    if (pending) {
+      // Revert the task state (it was cycled forward, so cycle 3 times to go back)
+      pending.task.nextState(); // DONE -> NOT_STARTED
+      pending.task.nextState(); // NOT_STARTED -> IN_PROGRESS
+      pending.task.nextState(); // IN_PROGRESS -> BLOCKED
+      updateTask(pending.task);
+
+      // Remove from pending
+      setPendingCompletions(prev => prev.filter(p => p.task.id !== taskId));
+    }
+  }, [pendingCompletions, updateTask]);
+
+  // Handle grace period expiry
+  const handleExpire = useCallback(async (taskId: TaskID) => {
+    // Find the task and actually update it
+    const pending = pendingCompletions.find(p => p.task.id === taskId);
+    if (pending) {
+      await updateTask(pending.task);
+      // Remove from pending
+      setPendingCompletions(prev => prev.filter(p => p.task.id !== taskId));
+
+      // Check for milestone progress (every 5 tasks or at level boundaries)
+      if (settings.enabled && settings.animations) {
+        const nextTotalTasks = progress.totalTasks + 1;
+        const nextLevel = Math.floor((progress.points + 10) / 100) + 1;
+
+        if (nextTotalTasks % 5 === 0 || nextLevel > progress.level) {
+          // Show liquid progress animation for milestones
+          if (nextLevel > progress.level) {
+            setLiquidProgressLabel(`Level ${nextLevel}!`);
+            setLiquidProgressValue(100);
+          } else {
+            setLiquidProgressLabel(`${nextTotalTasks} Tasks!`);
+            setLiquidProgressValue((nextTotalTasks % 10) * 10);
+          }
+          setShowLiquidProgress(true);
+        }
+      }
+    }
+  }, [pendingCompletions, updateTask, settings.enabled, settings.animations, progress]);
 
   useEffect(() => {
     const loadAndSeparateTasks = async () => {
@@ -97,6 +172,9 @@ const App: React.FC = () => {
           onCollapseAll={handleCollapseAll}
           onExpandToLevel={handleExpandToLevel}
         />
+        <button className="btn" onClick={() => setShowSettings(true)}>
+          ⚙ Settings
+        </button>
         <button className="btn" onClick={handleShowAddModal}>
           + Add Task
         </button>
@@ -149,6 +227,8 @@ const App: React.FC = () => {
             collapseAllTrigger={collapseAllTrigger}
             expandToLevelTrigger={expandToLevelTrigger}
             loadStrategy={activeTab === 'active' ? 'full' : 'lazy'}
+            onTaskComplete={activeTab === 'active' ? handleTaskComplete : undefined}
+            onMilestone={handleMilestone}
           />
         </div>
 
@@ -163,6 +243,24 @@ const App: React.FC = () => {
         parentTaskId="root"
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
+      />
+
+      <GracePeriodToast
+        toasts={pendingCompletions}
+        onUndo={handleUndo}
+        onExpire={handleExpire}
+      />
+
+      <SettingsPage
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
+      <LiquidProgressAnimation
+        progress={liquidProgressValue}
+        show={showLiquidProgress}
+        label={liquidProgressLabel}
+        onComplete={() => setShowLiquidProgress(false)}
       />
     </div>
   );

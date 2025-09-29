@@ -11,6 +11,8 @@ interface TreeViewProps {
   collapseAllTrigger?: number;
   expandToLevelTrigger?: {level: number, trigger: number} | null;
   loadStrategy?: 'full' | 'lazy';
+  onTaskComplete?: (task: Task) => void;
+  onMilestone?: (label: string, value: number) => void;
 }
 
 interface ExpandedState {
@@ -36,7 +38,9 @@ const TreeView: React.FC<TreeViewProps> = ({
   expandAllTrigger,
   collapseAllTrigger,
   expandToLevelTrigger,
-  loadStrategy = 'lazy'
+  loadStrategy = 'lazy',
+  onTaskComplete,
+  onMilestone
 }) => {
   const [tasks, setTasks] = useState<Map<TaskID, Task>>(new Map());
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
@@ -223,6 +227,8 @@ const TreeView: React.FC<TreeViewProps> = ({
           onToggle={() => toggleExpand(taskId)}
           isExpanded={isExpanded}
           hasChildren={hasChildren}
+          onTaskComplete={onTaskComplete}
+          onMilestone={onMilestone}
         />
         {shouldRenderChildren && (
           <div css={childrenContainerStyle(isExpanded)}>
@@ -231,7 +237,7 @@ const TreeView: React.FC<TreeViewProps> = ({
         )}
       </React.Fragment>
     );
-  }, [tasks, children, expanded, toggleExpand, allTasksLoaded]);
+  }, [tasks, children, expanded, toggleExpand, allTasksLoaded, onTaskComplete, onMilestone]);
 
   // Memoize the rendered tree
   const renderedTree = useMemo(() => (
