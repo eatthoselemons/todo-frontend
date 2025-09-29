@@ -68,7 +68,7 @@ export const AddTaskComponent = React.forwardRef<
 >(({ handleNewItem }, ref) => {
   return (
     <div css={container}>
-      <form css={form} onSubmit={handleNewItem}>
+      <form css={form} onSubmit={handleNewItem} id="add-task-form">
         <input
           css={textField}
           placeholder="New Item"
