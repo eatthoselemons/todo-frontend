@@ -14,6 +14,11 @@ export const TaskContextProvider: React.FC<
   children,
   db = new PouchDB<ITask>("tasks"),
 }) => {
+  // Expose for debugging/verification in browser console
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    (window as any).__pouchdb = db;
+  }
   return (
     <TaskContext.Provider value={{ db }}>
       {children}

@@ -1,7 +1,8 @@
 /** @jsxImportSource @emotion/react */
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { css } from "@emotion/react";
 import { useRewardsContext } from "../context/RewardsContext";
+import { useTaskContext } from "../context/TaskContext";
 
 interface SettingsPageProps {
   isOpen: boolean;
@@ -198,6 +199,43 @@ const statLabel = css`
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) => {
   const { settings, progress, updateSettings } = useRewardsContext();
+  const { db } = useTaskContext();
+
+  // DB diagnostics
+  const [dbInfo, setDbInfo] = useState<{ adapter?: string; doc_count?: number } | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [checkingDb, setCheckingDb] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    (async () => {
+      try {
+        const info = await db!.info();
+        setDbInfo({ adapter: (info as any).adapter, doc_count: (info as any).doc_count });
+        setDbError(null);
+      } catch (e: any) {
+        setDbInfo(null);
+        setDbError(e?.message || String(e));
+      }
+    })();
+  }, [isOpen, db]);
+
+  const runDbHealthCheck = async () => {
+    setCheckingDb(true);
+    setDbError(null);
+    try {
+      const id = `healthcheck-${Date.now()}`;
+      await db!.put({ _id: id, ts: Date.now() } as any);
+      const got = await db!.get(id);
+      await db!.remove(got);
+      const info = await db!.info();
+      setDbInfo({ adapter: (info as any).adapter, doc_count: (info as any).doc_count });
+    } catch (e: any) {
+      setDbError(e?.message || String(e));
+    } finally {
+      setCheckingDb(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -222,6 +260,38 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
         </div>
 
         <div css={content}>
+          {/* Database Diagnostics */}
+          <div css={section}>
+            <div css={sectionTitle}>Database</div>
+            <div className="small muted" style={{ marginBottom: 8 }}>
+              Verifies PouchDB availability and storage access in this browser.
+            </div>
+            <div css={statsCard} style={{ marginBottom: 12 }}>
+              <div css={stat}>
+                <div css={statValue}>{dbInfo?.adapter || '—'}</div>
+                <div css={statLabel}>Adapter</div>
+              </div>
+              <div css={stat}>
+                <div css={statValue}>{dbInfo?.doc_count ?? '—'}</div>
+                <div css={statLabel}>Docs</div>
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <button className="btn" onClick={runDbHealthCheck} disabled={checkingDb}>
+                {checkingDb ? 'Checking…' : 'Run DB Health Check'}
+              </button>
+              {dbError && (
+                <div className="small error-text" style={{ marginLeft: 8 }}>
+                  {dbError}
+                </div>
+              )}
+            </div>
+            <div className="small muted" style={{ marginTop: 8 }}>
+              Tip: If this fails, your browser/storage settings (e.g. private mode,
+              blocked cookies, or disabled IndexedDB) may prevent saving tasks.
+            </div>
+          </div>
+
           {/* Progress Stats */}
           <div css={section}>
             <div css={sectionTitle}>Your Progress</div>
