@@ -6,7 +6,7 @@ interface AddTaskModalProps {
   showAddModal: boolean;
   setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
   parentTaskId: TaskID;
-  onClose?: () => {};
+  onClose?: () => void;
 }
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({

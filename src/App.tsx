@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { TaskID, BaseState, Task } from "./domain/Task";
+import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
 import { useTaskContext } from "./context/TaskContext";
 import TreeView from "./components/TreeView";
@@ -240,7 +240,7 @@ const App: React.FC = () => {
       </div>
 
       <AddTaskModal
-        parentTaskId="root"
+        parentTaskId={ROOT_ID}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />

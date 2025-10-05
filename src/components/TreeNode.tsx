@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
 import { Task, BaseState } from "../domain/Task";
 import useTaskHooks from "../hooks/useTaskHooks";
@@ -63,7 +63,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
-  const statusChipRef = useRef<HTMLDivElement>(null);
   const { updateTask, deleteTask } = useTaskHooks();
   const { settings, addPoints, progress } = useRewardsContext();
 

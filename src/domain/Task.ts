@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from "uuid";
 
 export type TaskID = ReturnType<typeof uuidv4>;
 
+export const ROOT_ID: TaskID = "root";
+
 export enum BaseState {
   NOT_STARTED = "not_started",
   IN_PROGRESS = "in_progress",

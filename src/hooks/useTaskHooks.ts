@@ -1,4 +1,4 @@
-import { BaseState, ITask, Task, TaskID } from "../domain/Task";
+import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../domain/Task";
 import { useMemo } from "react";
 import { useTaskContext } from "../context/TaskContext";
 
@@ -8,10 +8,10 @@ const useTaskHooks = () => {
   return useMemo(() => {
     async function ensureRootExists() {
       try {
-        await db.get("root");
+        await db.get(ROOT_ID);
       } catch (ignore) {
-        const rootTask = new Task("root", BaseState.NOT_STARTED, "root", ["root"]);
-        await db.put({ _id: "root", ...rootTask });
+        const rootTask = new Task("root", BaseState.NOT_STARTED, ROOT_ID, [ROOT_ID]);
+        await db.put({ _id: ROOT_ID, ...rootTask });
       }
     }
 
@@ -64,13 +64,13 @@ const useTaskHooks = () => {
 
     async function getRootTaskIds(): Promise<TaskID[]> {
       await ensureRootExists();
-      const children = await getImmediateChildren("root");
+      const children = await getImmediateChildren(ROOT_ID);
       return children.map(child => child.id);
     }
 
     async function getRootTasks(): Promise<Task[]> {
       await ensureRootExists();
-      return getImmediateChildren("root");
+      return getImmediateChildren(ROOT_ID);
     }
 
     async function getTaskById(id: TaskID): Promise<Task> {
@@ -79,7 +79,7 @@ const useTaskHooks = () => {
 
     async function createTask(
       task: Task,
-      parentId: TaskID = "root"
+      parentId: TaskID = ROOT_ID
     ): Promise<string> {
       await ensureRootExists();
 
@@ -173,10 +173,9 @@ const useTaskHooks = () => {
       await Promise.all(taskIds.map((key) => deleteTask(key)));
     }
 
-    async function taskStateChange(id: TaskID, state: string): Promise<void> {
+    async function taskStateChange(id: TaskID, state: BaseState): Promise<void> {
       const tempTask: ITask = await db.get(id);
-      // @ts-ignore
-      tempTask.internalState = BaseState[state];
+      tempTask.internalState = state;
       db.put(tempTask);
     }
 
@@ -185,18 +184,11 @@ const useTaskHooks = () => {
       await Promise.all(children.map(child => deleteTask(child.id)));
     }
 
-    // For backward compatibility - returns parent from path
-    function getFromChildParentMap(taskId: string): string {
-      // This is a temporary compatibility function
-      // In the future, we should get the parent directly from the task's path
-      throw new Error("getFromChildParentMap is deprecated - use getParentId instead");
-    }
-
     async function getAllTasks(): Promise<Task[]> {
       const allDocs = await db.allDocs({ include_docs: true });
       return allDocs.rows
         .map(row => Task.from(row.doc as ITask))
-        .filter(task => task.id !== "root");
+        .filter(task => task.id !== ROOT_ID);
     }
 
     return {
@@ -211,7 +203,6 @@ const useTaskHooks = () => {
       deleteTask,
       deleteTasks,
       taskStateChange,
-      getFromChildParentMap,
       clearSubTasks,
       getImmediateChildren,
       getSubtree,

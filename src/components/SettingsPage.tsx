@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { css } from "@emotion/react";
 import { useRewardsContext } from "../context/RewardsContext";
 import useTaskHooks from "../hooks/useTaskHooks";
-import { Task } from "../domain/Task";
+import { Task, ROOT_ID } from "../domain/Task";
 import { useTaskContext } from "../context/TaskContext";
 
 interface SettingsPageProps {
@@ -257,7 +257,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
     setTasksDiagError(null);
     try {
       const sample = new Task(`Sample Task ${new Date().toLocaleTimeString()}`);
-      await createTask(sample, "root" as any);
+      await createTask(sample, ROOT_ID);
       await listRootTasks();
     } catch (e: any) {
       setTasksDiagError(e?.message || String(e));
