@@ -63,6 +63,7 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
         try {
           await db.put({
             _id: 'settings',
+            type: 'settings',
             rewards: defaultSettings,
           } as any);
         } catch (putErr) {
@@ -81,6 +82,7 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
         try {
           await db.put({
             _id: 'progress',
+            type: 'progress',
             ...defaultProgress,
           } as any);
         } catch (putErr) {
@@ -100,12 +102,14 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
       const doc = await db.get('settings') as any;
       await db.put({
         ...doc,
+        type: 'settings',
         rewards: updated,
       } as any);
     } catch (err: any) {
       if (err.status === 404) {
         await db.put({
           _id: 'settings',
+          type: 'settings',
           rewards: updated,
         } as any);
       } else {
@@ -128,12 +132,14 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
       const doc = await db.get('progress') as any;
       await db.put({
         ...doc,
+        type: 'progress',
         ...newProgress,
       } as any);
     } catch (err: any) {
       if (err.status === 404) {
         await db.put({
           _id: 'progress',
+          type: 'progress',
           ...newProgress,
         } as any);
       } else {
