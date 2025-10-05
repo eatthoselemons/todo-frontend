@@ -17,19 +17,12 @@
   },
   "scripts": {
     "build": "webpack --mode=production --node-env=production",
-    "eject": "react-scripts eject",
     "build:dev": "webpack --mode=development",
     "build:prod": "webpack --mode=production --node-env=production",
     "watch": "webpack --watch",
     "serve": "webpack serve",
     "postinstall": "husky install",
     "test": "jest"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

@@ -4,7 +4,7 @@ import { Undo, UndoStates } from "./Undo";
 export class UndoState extends Undo {
   constructor(
     public readonly task: Task,
-    public type: UndoStates = UndoStates.CREATE
+    public type: UndoStates = UndoStates.STATECHANGE
   ) {
     super(type, task);
   }

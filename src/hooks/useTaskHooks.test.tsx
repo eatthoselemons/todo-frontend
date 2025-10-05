@@ -7,8 +7,6 @@ import {
   TaskContextProviderProps,
 } from "../context/TaskContext";
 import { renderHook } from "@testing-library/react";
-import { Simulate } from "react-dom/test-utils";
-import error = Simulate.error;
 
 const createWrapper = ({
   db = new PouchDB<ITask>("testTasks", { adapter: "memory" }),
@@ -273,7 +271,7 @@ describe("TaskService", () => {
     expect((await getTaskById(subTask1.id)).internalState).toBe(
       BaseState.NOT_STARTED
     );
-    await taskStateChange(subTask1.id, "IN_PROGRESS");
+    await taskStateChange(subTask1.id, BaseState.IN_PROGRESS);
     expect((await getTaskById(subTask1.id)).state).toBe(
       BaseState.IN_PROGRESS
     );
