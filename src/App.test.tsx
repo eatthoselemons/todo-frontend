@@ -8,8 +8,18 @@ import { RewardsProvider } from "./context/RewardsContext";
 import PouchDB from "pouchdb";
 import { ITask } from "./domain/Task";
 
+let testDb: PouchDB.Database<ITask> | undefined;
+
+afterAll(async () => {
+  if (testDb) {
+    try {
+      await testDb.destroy();
+    } catch {}
+  }
+});
+
 test("renders app with title", () => {
-  const testDb = new PouchDB<ITask>("test-app", { adapter: "memory" });
+  testDb = new PouchDB<ITask>("test-app", { adapter: "memory" });
 
   render(
     <TaskContextProvider db={testDb}>

@@ -11,7 +11,7 @@ const useTaskHooks = () => {
         await db.get(ROOT_ID);
       } catch (ignore) {
         const rootTask = new Task("root", BaseState.NOT_STARTED, ROOT_ID, [ROOT_ID]);
-        await db.put({ _id: ROOT_ID, ...rootTask });
+        await db.put({ _id: ROOT_ID, type: 'task', ...rootTask } as any);
       }
     }
 
@@ -25,6 +25,7 @@ const useTaskHooks = () => {
     async function getImmediateChildren(taskId: TaskID): Promise<Task[]> {
       const allDocs = await db.allDocs({ include_docs: true });
       return allDocs.rows
+        .filter(row => (row.doc as any)?.type === 'task')
         .map(row => Task.from(row.doc as ITask))
         .filter(task => {
           // Task is immediate child if parent (second to last in path) is taskId
@@ -37,6 +38,7 @@ const useTaskHooks = () => {
     async function getSubtree(taskId: TaskID): Promise<Task[]> {
       const allDocs = await db.allDocs({ include_docs: true });
       return allDocs.rows
+        .filter(row => (row.doc as any)?.type === 'task')
         .map(row => Task.from(row.doc as ITask))
         .filter(task => task.path.includes(taskId) && task.id !== taskId);
     }
@@ -94,7 +96,7 @@ const useTaskHooks = () => {
       task.path = [...parent.path, task.id];
 
       // Save new task
-      await db.put({ _id: task.id, ...task });
+      await db.put({ _id: task.id, type: 'task', ...task } as any);
 
       return task.id;
     }
@@ -104,7 +106,7 @@ const useTaskHooks = () => {
     }
 
     async function deleteTask(id: TaskID) {
-      if (id === "root") {
+      if (id === ROOT_ID) {
         throw new Error("Cannot delete root task");
       }
 
@@ -187,6 +189,7 @@ const useTaskHooks = () => {
     async function getAllTasks(): Promise<Task[]> {
       const allDocs = await db.allDocs({ include_docs: true });
       return allDocs.rows
+        .filter(row => (row.doc as any)?.type === 'task')
         .map(row => Task.from(row.doc as ITask))
         .filter(task => task.id !== ROOT_ID);
     }

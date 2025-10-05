@@ -1,7 +1,7 @@
 import PouchDB from "pouchdb";
 import React, { PropsWithChildren } from "react";
 import useTaskHooks from "./useTaskHooks";
-import { BaseState, ITask, Task, TaskID } from "../domain/Task";
+import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../domain/Task";
 import {
   TaskContextProvider,
   TaskContextProviderProps,
@@ -80,7 +80,7 @@ describe("TaskService", () => {
 
     // Check that subTask has correct path
     const fetchedSubTask = await getTaskById(subTask.id);
-    expect(fetchedSubTask.path).toEqual(["root", rootTask.id, subTask.id]);
+    expect(fetchedSubTask.path).toEqual([ROOT_ID, rootTask.id, subTask.id]);
 
     // @formatter:off
     const uuidRegex = new RegExp("^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$");
@@ -188,7 +188,7 @@ describe("TaskService", () => {
 
     // Check path is correct
     let movedTask = await getTaskById(moveTestTask.id);
-    expect(movedTask.path).toEqual(["root", rootTask.id, subTask1.id, moveTestTask.id]);
+    expect(movedTask.path).toEqual([ROOT_ID, rootTask.id, subTask1.id, moveTestTask.id]);
 
     await moveTask(moveTestTask, subTask2);
 
@@ -198,7 +198,7 @@ describe("TaskService", () => {
 
     // Check new path is correct
     movedTask = await getTaskById(moveTestTask.id);
-    expect(movedTask.path).toEqual(["root", rootTask.id, subTask2.id, moveTestTask.id]);
+    expect(movedTask.path).toEqual([ROOT_ID, rootTask.id, subTask2.id, moveTestTask.id]);
 
     // task no longer under subtask1
     children1 = await getImmediateChildren(subTask1.id);
@@ -246,7 +246,7 @@ describe("TaskService", () => {
 
     // Check new task has correct path
     const newTask = await getTaskById(newTaskId);
-    expect(newTask.path).toEqual(["root", rootTask.id, subTask2.id, newTaskId]);
+    expect(newTask.path).toEqual([ROOT_ID, rootTask.id, subTask2.id, newTaskId]);
 
     //old task still under subtask1
     children1 = await getImmediateChildren(subTask1.id);
