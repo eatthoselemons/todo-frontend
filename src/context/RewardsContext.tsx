@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useTaskContext } from './TaskContext';
+import { Intensity, ThemeModule } from '../types/theme';
+import { themeManager } from '../services/ThemeManager';
+import { effectsEngine } from '../services/EffectsEngine';
+import { themeEventBus, ThemeEventMap } from '../services/ThemeEventBus';
+import liquidTheme from '../themes/liquid';
+import minimalTheme from '../themes/minimal';
 
 export interface RewardsSettings {
   enabled: boolean;
-  intensity: 'none' | 'minimal' | 'standard' | 'extra';
+  intensity: Intensity;
+  theme: string;
   animations: boolean;
   sounds: boolean;
   haptics: boolean;
@@ -20,13 +27,21 @@ interface RewardsProgress {
 interface RewardsContextType {
   settings: RewardsSettings;
   progress: RewardsProgress;
+  currentTheme: ThemeModule | null;
   updateSettings: (settings: Partial<RewardsSettings>) => Promise<void>;
   addPoints: (points: number) => Promise<void>;
+  emit: typeof themeEventBus.emit;
+  emitSync: typeof themeEventBus.emitSync;
+  on: typeof themeEventBus.on;
+  once: typeof themeEventBus.once;
+  off: typeof themeEventBus.off;
+  availableThemes: Array<{ id: string; name: string; description?: string }>;
 }
 
 const defaultSettings: RewardsSettings = {
   enabled: false,
   intensity: 'standard',
+  theme: 'liquid',
   animations: true,
   sounds: false,
   haptics: false,
@@ -42,12 +57,24 @@ const defaultProgress: RewardsProgress = {
 
 const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
 
+// Register themes on module load
+themeManager.registerTheme(liquidTheme);
+themeManager.registerTheme(minimalTheme);
+
 export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { db } = useTaskContext();
   const [settings, setSettings] = useState<RewardsSettings>(defaultSettings);
   const [progress, setProgress] = useState<RewardsProgress>(defaultProgress);
+  const [currentTheme, setCurrentTheme] = useState<ThemeModule | null>(null);
 
-  // Load settings from PouchDB on mount
+  // Get available themes
+  const availableThemes = themeManager.getRegisteredThemes().map(manifest => ({
+    id: manifest.id,
+    name: manifest.name,
+    description: manifest.description,
+  }));
+
+  // Load settings and theme on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -94,9 +121,26 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
     loadSettings();
   }, [db]);
 
+  // Load theme when settings change
+  useEffect(() => {
+    const loadTheme = async () => {
+      const themeId = settings.theme || themeManager.getSavedThemeId() || 'liquid';
+      const theme = await themeManager.loadTheme(themeId);
+      setCurrentTheme(theme);
+    };
+
+    loadTheme();
+  }, [settings.theme]);
+
   const updateSettings = async (newSettings: Partial<RewardsSettings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
+
+    // If theme changed, load the new theme
+    if (newSettings.theme && newSettings.theme !== settings.theme) {
+      const theme = await themeManager.loadTheme(newSettings.theme);
+      setCurrentTheme(theme);
+    }
 
     try {
       const doc = await db.get('settings') as any;
@@ -148,8 +192,55 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  // Subscribe to all theme events and trigger effects
+  useEffect(() => {
+    const unsubscribe = themeEventBus.onAny(async (eventType, data) => {
+      if (!settings.enabled || !currentTheme?.getEffects) {
+        return;
+      }
+
+      const ctx = {
+        intensity: settings.intensity,
+        animations: settings.animations,
+        sounds: settings.sounds,
+        haptics: settings.haptics,
+        userSettings: {},
+      };
+
+      // Convert to ThemeEvent format
+      const themeEvent = themeEventBus.toThemeEvent(eventType as keyof ThemeEventMap, data);
+
+      const effectDescriptor = currentTheme.getEffects(themeEvent, ctx);
+      if (!effectDescriptor) return;
+
+      // Add points if specified
+      if (effectDescriptor.points) {
+        await addPoints(effectDescriptor.points.delta);
+      }
+
+      // Execute the effects
+      await effectsEngine.execute(effectDescriptor);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [settings, currentTheme]);
+
   return (
-    <RewardsContext.Provider value={{ settings, progress, updateSettings, addPoints }}>
+    <RewardsContext.Provider value={{
+      settings,
+      progress,
+      currentTheme,
+      updateSettings,
+      addPoints,
+      emit: themeEventBus.emit.bind(themeEventBus),
+      emitSync: themeEventBus.emitSync.bind(themeEventBus),
+      on: themeEventBus.on.bind(themeEventBus),
+      once: themeEventBus.once.bind(themeEventBus),
+      off: themeEventBus.off.bind(themeEventBus),
+      availableThemes,
+    }}>
       {children}
     </RewardsContext.Provider>
   );

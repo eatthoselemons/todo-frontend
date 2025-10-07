@@ -200,7 +200,7 @@ const statLabel = css`
 `;
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) => {
-  const { settings, progress, updateSettings } = useRewardsContext();
+  const { settings, progress, updateSettings, availableThemes } = useRewardsContext();
   const { db } = useTaskContext();
   const { getRootTasks, createTask } = useTaskHooks();
 
@@ -288,6 +288,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
 
   const handleIntensityChange = (intensity: typeof settings.intensity) => {
     updateSettings({ intensity });
+  };
+
+  const handleThemeChange = (theme: string) => {
+    updateSettings({ theme });
   };
 
   return (
@@ -399,6 +403,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
 
             {settings.enabled && (
               <>
+                <div css={setting}>
+                  <div css={settingLabel}>
+                    <div css={labelText}>Theme</div>
+                    <div css={labelDescription}>
+                      Visual style and animation theme
+                    </div>
+                  </div>
+                  <div css={intensitySelector}>
+                    {availableThemes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        css={intensityOption}
+                        className={settings.theme === theme.id ? 'active' : ''}
+                        onClick={() => handleThemeChange(theme.id)}
+                        title={theme.description}
+                      >
+                        {theme.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div css={setting}>
                   <div css={settingLabel}>
                     <div css={labelText}>Intensity</div>

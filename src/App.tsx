@@ -12,6 +12,8 @@ import { GracePeriodToast } from "./components/GracePeriodToast";
 import { SettingsPage } from "./components/SettingsPage";
 import { LiquidProgressAnimation } from "./components/LiquidProgressAnimation";
 import { useRewardsContext } from "./context/RewardsContext";
+import ThemeEffectsHost from "./components/ThemeEffectsHost";
+import AdvancedThreeEffectsHost from "./components/AdvancedThreeEffectsHost";
 import "./styles/app.css";
 
 const App: React.FC = () => {
@@ -262,6 +264,14 @@ const App: React.FC = () => {
         label={liquidProgressLabel}
         onComplete={() => setShowLiquidProgress(false)}
       />
+
+      {settings.enabled && settings.animations && settings.intensity === 'minimal' && (
+        <ThemeEffectsHost />
+      )}
+
+      {settings.enabled && settings.animations && (settings.intensity === 'standard' || settings.intensity === 'extra') && (
+        <AdvancedThreeEffectsHost />
+      )}
     </div>
   );
 };
