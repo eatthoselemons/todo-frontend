@@ -2,20 +2,21 @@
 // This avoids heavy logic in tests; functions are small and resilient.
 
 import type { ParticleEffect } from '../types/theme';
+import type * as THREE from 'three';
 
 export async function initThreeRenderer(container: HTMLElement) {
   // Lazy import three
-  const THREE = await import('three');
+  const ThreeModule = await import('three');
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new ThreeModule.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x000000, 0);
   renderer.domElement.style.pointerEvents = 'none';
   container.appendChild(renderer.domElement);
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -1000, 1000);
+  const scene = new ThreeModule.Scene();
+  const camera = new ThreeModule.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -1000, 1000);
 
   let running = false;
   let needsFrame = false;
@@ -50,8 +51,8 @@ export async function initThreeRenderer(container: HTMLElement) {
   }
 
   function spriteAt(x: number, y: number, color = 0xffffff, size = 6) {
-    const mat = new THREE.SpriteMaterial({ color, transparent: true, opacity: 0.9 });
-    const sp = new THREE.Sprite(mat);
+    const mat = new ThreeModule.SpriteMaterial({ color, transparent: true, opacity: 0.9 });
+    const sp = new ThreeModule.Sprite(mat);
     sp.position.set(x, y, 0);
     sp.scale.setScalar(size);
     return sp;
@@ -59,7 +60,7 @@ export async function initThreeRenderer(container: HTMLElement) {
 
   function handleParticle(p: ParticleEffect) {
     const origin = p.origin || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    const colors = (p.colorSet && p.colorSet.length ? p.colorSet : ['#ffffff']).map(c => new THREE.Color(c));
+    const colors = (p.colorSet && p.colorSet.length ? p.colorSet : ['#ffffff']).map(c => new ThreeModule.Color(c));
     const pick = () => colors[Math.floor(Math.random() * colors.length)];
     const count = Math.max(1, p.count || 1);
 

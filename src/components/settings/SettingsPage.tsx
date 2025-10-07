@@ -85,6 +85,14 @@ const content = css`
   flex: 1;
 `;
 
+const tabPanel = css`
+  display: none;
+
+  &.active {
+    display: block;
+  }
+`;
+
 const tabs: Tab[] = [
   { id: 'rewards', label: 'Rewards', icon: '🎉' },
   { id: 'progress', label: 'Progress', icon: '📊' },
@@ -98,27 +106,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
   const [activeTab, setActiveTab] = useState('rewards');
 
   if (!isOpen) return null;
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'rewards':
-        return (
-          <RewardsPanel
-            settings={settings}
-            availableThemes={availableThemes}
-            onUpdateSettings={updateSettings}
-          />
-        );
-      case 'progress':
-        return <ProgressStats progress={progress} />;
-      case 'database':
-        return <DatabaseDiagnostics db={db} />;
-      case 'danger':
-        return <DangerZone db={db} />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <div css={modalOverlay} onClick={onClose}>
@@ -135,7 +122,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
         </div>
 
         <div css={content}>
-          {renderTabContent()}
+          <div css={tabPanel} className={activeTab === 'rewards' ? 'active' : ''}>
+            <RewardsPanel
+              settings={settings}
+              availableThemes={availableThemes}
+              onUpdateSettings={updateSettings}
+            />
+          </div>
+
+          <div css={tabPanel} className={activeTab === 'progress' ? 'active' : ''}>
+            <ProgressStats progress={progress} />
+          </div>
+
+          <div css={tabPanel} className={activeTab === 'database' ? 'active' : ''}>
+            <DatabaseDiagnostics db={db} />
+          </div>
+
+          <div css={tabPanel} className={activeTab === 'danger' ? 'active' : ''}>
+            <DangerZone db={db} />
+          </div>
         </div>
       </div>
     </div>
