@@ -1,8 +1,9 @@
 /** @jsxImportSource @emotion/react */
-import React from 'react';
+import React, { useState } from 'react';
 import { css } from '@emotion/react';
 import { useRewardsContext } from '../../context/RewardsContext';
 import { useTaskContext } from '../../context/TaskContext';
+import { TabBar, Tab } from '../shared/TabBar';
 import { DatabaseDiagnostics } from './DatabaseDiagnostics';
 import { ProgressStats } from './ProgressStats';
 import { RewardsPanel } from './RewardsPanel';
@@ -32,9 +33,11 @@ const modalContent = css`
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 const header = css`
@@ -43,6 +46,7 @@ const header = css`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 `;
 
 const title = css`
@@ -70,15 +74,51 @@ const closeButton = css`
   }
 `;
 
+const tabContainer = css`
+  flex-shrink: 0;
+  padding: 0 20px;
+`;
+
 const content = css`
   padding: 20px;
+  overflow-y: auto;
+  flex: 1;
 `;
+
+const tabs: Tab[] = [
+  { id: 'rewards', label: 'Rewards', icon: '🎉' },
+  { id: 'progress', label: 'Progress', icon: '📊' },
+  { id: 'database', label: 'Database', icon: '💾' },
+  { id: 'danger', label: 'Danger Zone', icon: '⚠️' },
+];
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) => {
   const { settings, progress, updateSettings, availableThemes } = useRewardsContext();
   const { db } = useTaskContext();
+  const [activeTab, setActiveTab] = useState('rewards');
 
   if (!isOpen) return null;
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'rewards':
+        return (
+          <RewardsPanel
+            settings={settings}
+            availableThemes={availableThemes}
+            onUpdateSettings={updateSettings}
+          />
+        );
+      case 'progress':
+        return <ProgressStats progress={progress} />;
+      case 'database':
+        return <DatabaseDiagnostics db={db} />;
+      case 'danger':
+        return <DangerZone db={db} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div css={modalOverlay} onClick={onClose}>
@@ -90,15 +130,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
           </button>
         </div>
 
+        <div css={tabContainer}>
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+
         <div css={content}>
-          <DatabaseDiagnostics db={db} />
-          <ProgressStats progress={progress} />
-          <DangerZone db={db} />
-          <RewardsPanel
-            settings={settings}
-            availableThemes={availableThemes}
-            onUpdateSettings={updateSettings}
-          />
+          {renderTabContent()}
         </div>
       </div>
     </div>
