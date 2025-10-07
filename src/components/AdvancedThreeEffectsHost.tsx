@@ -1,0 +1,105 @@
+/** @jsxImportSource @emotion/react */
+import React, { useEffect, useRef, useState } from 'react';
+import { css } from '@emotion/react';
+import { useRewardsContext } from '../context/RewardsContext';
+import type { ParticleEffect } from '../types/theme';
+
+const containerStyle = css`
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+`;
+
+type RendererAPI = {
+  dispose: () => void;
+  pause: () => void;
+  resume: () => void;
+  handleParticle: (p: ParticleEffect) => void;
+  handleAnimation: (a: any) => void;
+};
+
+export const AdvancedThreeEffectsHost: React.FC = () => {
+  const { on, settings } = useRewardsContext();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const rendererRef = useRef<RendererAPI | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Only active for standard/extra
+  const active = settings.enabled && settings.animations && (settings.intensity === 'standard' || settings.intensity === 'extra');
+
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const mod = await import('../three/ThreeRenderer');
+        if (cancelled) return;
+        const api: RendererAPI = await mod.initThreeRenderer(containerRef.current!);
+        if (cancelled) {
+          api.dispose();
+          return;
+        }
+        rendererRef.current = api;
+        setReady(true);
+      } catch (e) {
+        // Failed to init three renderer; remain in DOM-only mode
+        console.warn('Three renderer failed to initialize:', e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
+    };
+  }, [active]);
+
+  // Forward events
+  useEffect(() => {
+    if (!active) return;
+
+    const unsubParticles = on('theme:particle', (p) => {
+      // Non-blocking; ignore if renderer not yet ready
+      if (rendererRef.current) {
+        rendererRef.current.handleParticle(p);
+      }
+    });
+
+    const unsubAnim = on('theme:animation', (a) => {
+      if (rendererRef.current) {
+        rendererRef.current.handleAnimation(a);
+      }
+    });
+
+    return () => {
+      unsubParticles();
+      unsubAnim();
+    };
+  }, [on, active]);
+
+  // Pause on background
+  useEffect(() => {
+    if (!active) return;
+    const onVis = () => {
+      if (!rendererRef.current) return;
+      if (document.visibilityState === 'hidden') rendererRef.current.pause();
+      else rendererRef.current.resume();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [active]);
+
+  if (!active) return null;
+
+  return <div ref={containerRef} css={containerStyle} aria-hidden={!ready} />;
+};
+
+export default AdvancedThreeEffectsHost;
+
