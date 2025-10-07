@@ -25,44 +25,75 @@ export interface ThemeManifest {
   };
 }
 
-export interface AnimationEffect {
-  target: string; // CSS selector or logical target id (e.g. "task:123")
-  kind: "burst" | "liquidSplash" | "liquidFill" | "rise" | "shake" | "confetti" | "lottie" | "celebrationSplash";
-  params?: Record<string, any>;
-  durationMs?: number;
+//
+// Augmentable animation kinds (composition over inheritance)
+//
+// External code can add new animation kinds via declaration merging:
+// declare module '../types/theme' {
+//   interface AnimationKindMap { myCustom: { /* optional shape */ } }
+// }
+//
+export interface AnimationKindMap {
+  burst: {};
+  liquidSplash: {};
+  liquidFill: {};
+  rise: {};
+  shake: {};
+  confetti: {};
+  lottie: {};
+  celebrationSplash: {};
 }
 
-export type ParticleEffect =
-  | {
-      kind: "confetti";
-      count: number;
-      origin?: { x: number; y: number };
-      colorSet?: string[];
-      spread?: number; // degrees
-      velocity?: number; // px/s
-    }
-  | {
-      kind: "bubbles";
-      count: number;
-      origin?: { x: number; y: number };
-      colorSet?: string[];
-      riseSpeed?: number; // px/s
-      wobble?: number; // px amplitude
-    }
-  | {
-      kind: "sparks";
-      count: number;
-      origin?: { x: number; y: number };
-      colorSet?: string[];
-      trail?: boolean;
-    }
-  | {
-      kind: "sparkles";
-      count: number;
-      origin?: { x: number; y: number };
-      colorSet?: string[];
-      sizeRange?: [number, number]; // px
-    };
+export type BaseAnimation = {
+  target: string; // CSS selector or logical target id (e.g. "task:123")
+  durationMs?: number;
+  params?: Record<string, any>;
+};
+
+export type AnimationEffect = BaseAnimation & (
+  { [K in keyof AnimationKindMap]: { kind: K } & AnimationKindMap[K] }[keyof AnimationKindMap]
+);
+
+//
+// Augmentable particle kinds (composition over inheritance)
+//
+// External code can add new particle kinds via declaration merging:
+// declare module '../types/theme' {
+//   interface ParticleKindMap { hearts: { count: number; origin?: {x:number;y:number}; colorSet?: string[]; size?: number } }
+// }
+//
+export interface ParticleKindMap {
+  confetti: {
+    count: number;
+    origin?: { x: number; y: number };
+    colorSet?: string[];
+    spread?: number; // degrees
+    velocity?: number; // px/s
+  };
+  bubbles: {
+    count: number;
+    origin?: { x: number; y: number };
+    colorSet?: string[];
+    riseSpeed?: number; // px/s
+    wobble?: number; // px amplitude
+  };
+  sparks: {
+    count: number;
+    origin?: { x: number; y: number };
+    colorSet?: string[];
+    trail?: boolean;
+  };
+  sparkles: {
+    count: number;
+    origin?: { x: number; y: number };
+    colorSet?: string[];
+    sizeRange?: [number, number]; // px
+  };
+}
+
+export type ParticleEffect = {
+  [K in keyof ParticleKindMap]: { kind: K } & ParticleKindMap[K]
+}[keyof ParticleKindMap];
 
 export interface SoundEffect {
   id: string;

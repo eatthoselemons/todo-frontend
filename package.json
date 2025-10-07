@@ -45,6 +45,7 @@
     "@types/pouchdb": "^6.4.0",
     "@types/react": "^18.0.38",
     "@types/react-dom": "^18.0.11",
+    "@types/three": "^0.180.0",
     "@types/uuid": "^9.0.1",
     "@webpack-cli/generators": "^3.0.2",
     "css-loader": "^6.7.3",
