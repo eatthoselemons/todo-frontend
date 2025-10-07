@@ -1,4 +1,10 @@
 import { ThemeModule, EffectDescriptor, ThemeEvent, ThemeContext } from '../../types/theme';
+import {
+  createStandardIntensities,
+  buildTaskCompleteEffect,
+  buildBranchCompleteEffect,
+  createSoundEffect,
+} from '../helpers';
 
 const manifest = {
   id: 'liquid',
@@ -8,36 +14,12 @@ const manifest = {
   description: 'Fluid, water-inspired animations with waves and bubbles',
   compatibleAppRange: '^1.0.0',
   tokensCssHref: '/themes/liquid/tokens.css',
-  intensities: {
-    none: {
-      motionScale: 0,
-      particles: 0,
-      sound: 'off' as const,
-      haptics: 'off' as const,
-      pointsMultiplier: 1,
-    },
-    minimal: {
-      motionScale: 0.5,
-      particles: 5,
-      sound: 'subtle' as const,
-      haptics: 'light' as const,
-      pointsMultiplier: 1,
-    },
-    standard: {
-      motionScale: 1,
-      particles: 12,
-      sound: 'normal' as const,
-      haptics: 'medium' as const,
-      pointsMultiplier: 1,
-    },
-    extra: {
-      motionScale: 1.5,
-      particles: 25,
-      sound: 'rich' as const,
-      haptics: 'strong' as const,
-      pointsMultiplier: 2,
-    },
-  },
+  intensities: createStandardIntensities({
+    // Liquid theme has slightly more particles
+    minimal: { particles: 8 },
+    standard: { particles: 15 },
+    extra: { particles: 30 },
+  }),
   contributes: {
     effects: ['task:complete', 'task:create', 'branch:complete', 'milestone'],
     sounds: {
@@ -80,80 +62,18 @@ const liquidTheme: ThemeModule = {
 
     switch (event.type) {
       case 'task:complete': {
-        const effects: EffectDescriptor = {
-          animations: [
-            {
-              target: `task:${event.taskId}`,
-              kind: 'burst',
-              params: { scale: cfg.motionScale },
-              durationMs: 400,
-            },
-          ],
-        };
-
-        // Add particles for minimal and above
-        if (cfg.particles > 0) {
-          effects.particles = [
-            {
-              kind: 'bubbles',
-              count: cfg.particles,
-              origin: event.clientPos,
-              colorSet: ['#6366f1', '#8b5cf6', '#34d399'],
-            },
-          ];
-        }
-
-        // Add sound if enabled
-        if (ctx.sounds && cfg.sound !== 'off') {
-          effects.sound = {
-            id: event.isRoot ? 'splash' : 'bubble',
-            volume: cfg.sound === 'subtle' ? 0.3 : cfg.sound === 'rich' ? 0.7 : 0.5,
-          };
-        }
-
-        // Add haptics if enabled
-        if (ctx.haptics && cfg.haptics !== 'off') {
-          effects.haptics = { pattern: cfg.haptics };
-        }
-
-        // Add points
-        effects.points = {
-          delta: (event.isRoot ? 50 : 10) * cfg.pointsMultiplier,
-          reason: 'complete',
-        };
-
-        return effects;
+        return buildTaskCompleteEffect(event, ctx, cfg, {
+          particleKind: 'bubbles',
+          soundId: event.isRoot ? 'splash' : 'bubble',
+          colors: ['#6366f1', '#8b5cf6', '#34d399'],
+        });
       }
 
       case 'branch:complete': {
-        const effects: EffectDescriptor = {
-          animations: [
-            {
-              target: `task:${event.taskId}`,
-              kind: 'liquidFill',
-              params: { scale: cfg.motionScale },
-              durationMs: 800,
-            },
-          ],
-        };
-
-        if (ctx.sounds && cfg.sound !== 'off') {
-          effects.sound = {
-            id: 'chime',
-            volume: 0.6,
-          };
-        }
-
-        if (ctx.haptics && cfg.haptics !== 'off') {
-          effects.haptics = { pattern: 'medium' };
-        }
-
-        effects.points = {
-          delta: 25 * cfg.pointsMultiplier,
-          reason: 'branch-complete',
-        };
-
-        return effects;
+        return buildBranchCompleteEffect(event, ctx, cfg, {
+          soundId: 'chime',
+          animationKind: 'liquidFill',
+        });
       }
 
       case 'milestone': {
@@ -178,16 +98,18 @@ const liquidTheme: ThemeModule = {
           ];
         }
 
-        if (ctx.sounds && cfg.sound !== 'off') {
-          effects.sound = {
-            id: 'chime',
-            volume: 0.8,
-          };
+        if (ctx.sounds) {
+          effects.sound = createSoundEffect('chime', cfg.sound, 'high');
         }
 
         if (ctx.haptics && cfg.haptics !== 'off') {
           effects.haptics = { pattern: [50, 50, 50] };
         }
+
+        effects.points = {
+          delta: 100 * cfg.pointsMultiplier,
+          reason: 'milestone',
+        };
 
         return effects;
       }

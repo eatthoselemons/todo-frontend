@@ -20,7 +20,7 @@ export class PersistenceService {
    * Save a document, creating or updating as needed
    * Automatically handles 404 errors by creating new documents
    */
-  async save<T extends Partial<BaseDocument>>(
+  async save<T extends Record<string, any>>(
     docId: string,
     data: T,
     docType: string
@@ -100,9 +100,9 @@ export class PersistenceService {
   /**
    * Update specific fields in a document without replacing the whole thing
    */
-  async update<T extends Partial<BaseDocument>>(
+  async update<T extends Record<string, any>>(
     docId: string,
-    updates: Partial<T>
+    updates: T
   ): Promise<void> {
     const doc = await this.db.get(docId);
     await this.db.put({

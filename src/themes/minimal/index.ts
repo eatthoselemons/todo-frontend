@@ -1,4 +1,10 @@
 import { ThemeModule, EffectDescriptor, ThemeEvent, ThemeContext } from '../../types/theme';
+import {
+  createStandardIntensities,
+  buildTaskCompleteEffect,
+  buildBranchCompleteEffect,
+  createSoundEffect,
+} from '../helpers';
 
 const manifest = {
   id: 'minimal',
@@ -8,36 +14,12 @@ const manifest = {
   description: 'Clean, subtle animations with minimal distraction',
   compatibleAppRange: '^1.0.0',
   tokensCssHref: '/themes/minimal/tokens.css',
-  intensities: {
-    none: {
-      motionScale: 0,
-      particles: 0,
-      sound: 'off' as const,
-      haptics: 'off' as const,
-      pointsMultiplier: 1,
-    },
-    minimal: {
-      motionScale: 0.3,
-      particles: 0,
-      sound: 'off' as const,
-      haptics: 'light' as const,
-      pointsMultiplier: 1,
-    },
-    standard: {
-      motionScale: 0.7,
-      particles: 3,
-      sound: 'subtle' as const,
-      haptics: 'light' as const,
-      pointsMultiplier: 1,
-    },
-    extra: {
-      motionScale: 1,
-      particles: 6,
-      sound: 'normal' as const,
-      haptics: 'medium' as const,
-      pointsMultiplier: 1,
-    },
-  },
+  intensities: createStandardIntensities({
+    // Minimal theme has more subtle motion and fewer particles
+    minimal: { motionScale: 0.3, particles: 0, sound: 'off' },
+    standard: { motionScale: 0.7, particles: 3, sound: 'subtle', haptics: 'light' },
+    extra: { motionScale: 1, particles: 6, sound: 'normal', haptics: 'medium', pointsMultiplier: 1 },
+  }),
   contributes: {
     effects: ['task:complete', 'task:create', 'branch:complete'],
     sounds: {
@@ -77,59 +59,19 @@ const minimalTheme: ThemeModule = {
 
     switch (event.type) {
       case 'task:complete': {
-        const effects: EffectDescriptor = {
-          animations: [
-            {
-              target: `task:${event.taskId}`,
-              kind: 'burst',
-              params: { scale: cfg.motionScale * 0.5 }, // More subtle
-              durationMs: 300,
-            },
-          ],
-        };
-
-        // Minimal theme has very few particles
-        if (cfg.particles > 0) {
-          effects.particles = [
-            {
-              kind: 'sparkles',
-              count: cfg.particles,
-              origin: event.clientPos,
-              colorSet: ['#10b981', '#34d399'],
-            },
-          ];
-        }
-
-        // Subtle sound
-        if (ctx.sounds && cfg.sound !== 'off') {
-          effects.sound = {
-            id: 'tick',
-            volume: 0.2,
-          };
-        }
-
-        // Light haptics
-        if (ctx.haptics && cfg.haptics !== 'off') {
-          effects.haptics = { pattern: 'light' };
-        }
-
-        // Points (no multiplier for minimal theme)
-        effects.points = {
-          delta: event.isRoot ? 50 : 10,
-          reason: 'complete',
-        };
-
-        return effects;
+        return buildTaskCompleteEffect(event, ctx, cfg, {
+          particleKind: 'sparkles',
+          soundId: 'tick',
+          colors: ['#10b981', '#34d399'],
+          animationDuration: 300,
+        });
       }
 
       case 'branch:complete': {
         const effects: EffectDescriptor = {};
 
-        if (ctx.sounds && cfg.sound !== 'off') {
-          effects.sound = {
-            id: 'success',
-            volume: 0.3,
-          };
+        if (ctx.sounds) {
+          effects.sound = createSoundEffect('success', cfg.sound, 'medium');
         }
 
         if (ctx.haptics && cfg.haptics !== 'off') {
@@ -137,7 +79,7 @@ const minimalTheme: ThemeModule = {
         }
 
         effects.points = {
-          delta: 25,
+          delta: 25 * cfg.pointsMultiplier,
           reason: 'branch-complete',
         };
 
