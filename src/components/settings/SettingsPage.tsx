@@ -1,10 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useMemo, useState } from "react";
 import { css } from "@emotion/react";
-import { useRewardsContext } from "../context/RewardsContext";
-import useTaskHooks from "../hooks/useTaskHooks";
-import { Task, ROOT_ID } from "../domain/Task";
-import { useTaskContext } from "../context/TaskContext";
+import { useRewardsContext } from "../../context/RewardsContext";
+import useTaskHooks from "../../hooks/useTaskHooks";
+import { Task, ROOT_ID } from "../../domain/Task";
+import { useTaskContext } from "../../context/TaskContext";
 
 interface SettingsPageProps {
   isOpen: boolean;

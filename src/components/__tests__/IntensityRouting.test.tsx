@@ -14,13 +14,13 @@ jest.mock('../../context/RewardsContext', () => {
   };
 });
 
-jest.mock('../ThemeEffectsHost', () => () => <div data-testid="dom-host" />);
-jest.mock('../AdvancedThreeEffectsHost', () => () => <div data-testid="three-host" />);
+jest.mock('../effects/ThemeEffectsHost', () => () => <div data-testid="dom-host" />);
+jest.mock('../effects/AdvancedThreeEffectsHost', () => () => <div data-testid="three-host" />);
 
 // Access the mocked helper from the mocked module at runtime
 const { __setSettings } = require('../../context/RewardsContext') as any;
-import ThemeEffectsHost from '../ThemeEffectsHost';
-import AdvancedThreeEffectsHost from '../AdvancedThreeEffectsHost';
+import ThemeEffectsHost from '../effects/ThemeEffectsHost';
+import AdvancedThreeEffectsHost from '../effects/AdvancedThreeEffectsHost';
 
 const Router: React.FC = () => {
   const { useRewardsContext } = jest.requireActual('../../context/RewardsContext');

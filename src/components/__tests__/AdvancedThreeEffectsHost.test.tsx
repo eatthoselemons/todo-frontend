@@ -30,7 +30,7 @@ jest.mock('../../three/ThreeRenderer', () => ({
   initThreeRenderer: jest.fn(async () => ({ dispose, pause, resume, handleParticle, handleAnimation })),
 }));
 
-import AdvancedThreeEffectsHost from '../AdvancedThreeEffectsHost';
+import AdvancedThreeEffectsHost from '../effects/AdvancedThreeEffectsHost';
 
 describe('AdvancedThreeEffectsHost', () => {
   beforeEach(() => {

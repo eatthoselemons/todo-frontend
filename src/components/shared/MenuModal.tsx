@@ -1,8 +1,8 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState } from "react";
 import { css } from "@emotion/react";
-import { TaskID } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { TaskID } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 
 interface MenuModalProps {
   showMenuModal: boolean;

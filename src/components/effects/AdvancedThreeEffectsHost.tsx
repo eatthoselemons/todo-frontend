@@ -1,8 +1,8 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
-import { useRewardsContext } from '../context/RewardsContext';
-import type { ParticleEffect } from '../types/theme';
+import { useRewardsContext } from '../../context/RewardsContext';
+import type { ParticleEffect } from '../../types/theme';
 
 const containerStyle = css`
   position: fixed;
@@ -37,7 +37,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
 
     (async () => {
       try {
-        const mod = await import('../three/ThreeRenderer');
+        const mod = await import('../../three/ThreeRenderer');
         if (cancelled) return;
         const api: RendererAPI = await mod.initThreeRenderer(containerRef.current!);
         if (cancelled) {

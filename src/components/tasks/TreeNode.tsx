@@ -1,11 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
-import { Task, BaseState } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { Task, BaseState } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 import { AddTaskModal } from "./AddTaskModal";
-import { SparkleAnimation } from "./SparkleAnimation";
-import { useRewardsContext } from "../context/RewardsContext";
+import { SparkleAnimation } from "../effects/SparkleAnimation";
+import { useRewardsContext } from "../../context/RewardsContext";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 

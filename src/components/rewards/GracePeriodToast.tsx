@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState, useCallback } from "react";
 import { css, keyframes } from "@emotion/react";
-import { Task, TaskID } from "../domain/Task";
+import { Task, TaskID } from "../../domain/Task";
 
 interface ToastItem {
   id: string;

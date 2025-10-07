@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Task } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { Task } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
