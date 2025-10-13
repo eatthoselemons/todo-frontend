@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode, useMemo, useRef, useCallback } from 'react';
 import { useTaskContext } from './TaskContext';
 import { ThemeModule } from '../types/theme';
 import { themeManager } from '../services/ThemeManager';
@@ -42,6 +42,24 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
   const { progress, addPoints } = useProgress(persistence);
   const { currentTheme } = useTheme(settings.theme);
 
+  // Use refs to avoid recreating the event listener on every settings change
+  const settingsRef = useRef(settings);
+  const themeRef = useRef(currentTheme);
+  const addPointsRef = useRef(addPoints);
+
+  // Update refs when values change
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    themeRef.current = currentTheme;
+  }, [currentTheme]);
+
+  useEffect(() => {
+    addPointsRef.current = addPoints;
+  }, [addPoints]);
+
   // Get available themes
   const availableThemes = useMemo(
     () => themeManager.getRegisteredThemes().map(manifest => ({
@@ -53,29 +71,34 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
   );
 
   // Subscribe to all theme events and trigger effects
+  // Only set up once on mount
   useEffect(() => {
     const unsubscribe = themeEventBus.onAny(async (eventType, data) => {
-      if (!settings.enabled || !currentTheme?.getEffects) {
+      // Get current values from refs
+      const currentSettings = settingsRef.current;
+      const theme = themeRef.current;
+
+      if (!currentSettings.enabled || !theme?.getEffects) {
         return;
       }
 
       const ctx = {
-        intensity: settings.intensity,
-        animations: settings.animations,
-        sounds: settings.sounds,
-        haptics: settings.haptics,
+        intensity: currentSettings.intensity,
+        animations: currentSettings.animations,
+        sounds: currentSettings.sounds,
+        haptics: currentSettings.haptics,
         userSettings: {},
       };
 
       // Convert to ThemeEvent format
       const themeEvent = themeEventBus.toThemeEvent(eventType as keyof ThemeEventMap, data);
 
-      const effectDescriptor = currentTheme.getEffects(themeEvent, ctx);
+      const effectDescriptor = theme.getEffects(themeEvent, ctx);
       if (!effectDescriptor) return;
 
       // Add points if specified
       if (effectDescriptor.points) {
-        await addPoints(effectDescriptor.points.delta);
+        await addPointsRef.current(effectDescriptor.points.delta);
       }
 
       // Execute the effects
@@ -85,7 +108,29 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => {
       unsubscribe();
     };
-  }, [settings, currentTheme, addPoints]);
+  }, []);
+
+  // Stable event bus methods (don't recreate on every render)
+  const emit = useCallback<typeof themeEventBus.emit>(
+    (eventType, data) => themeEventBus.emit(eventType, data),
+    []
+  );
+  const emitSync = useCallback<typeof themeEventBus.emitSync>(
+    (eventType, data) => themeEventBus.emitSync(eventType, data),
+    []
+  );
+  const on = useCallback<typeof themeEventBus.on>(
+    (eventType, handler) => themeEventBus.on(eventType, handler),
+    []
+  );
+  const once = useCallback<typeof themeEventBus.once>(
+    (eventType) => themeEventBus.once(eventType),
+    []
+  );
+  const off = useCallback<typeof themeEventBus.off>(
+    (eventType, handler) => themeEventBus.off(eventType, handler),
+    []
+  );
 
   const contextValue = useMemo<RewardsContextType>(() => ({
     settings,
@@ -93,13 +138,13 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
     currentTheme,
     updateSettings,
     addPoints,
-    emit: themeEventBus.emit.bind(themeEventBus),
-    emitSync: themeEventBus.emitSync.bind(themeEventBus),
-    on: themeEventBus.on.bind(themeEventBus),
-    once: themeEventBus.once.bind(themeEventBus),
-    off: themeEventBus.off.bind(themeEventBus),
+    emit,
+    emitSync,
+    on,
+    once,
+    off,
     availableThemes,
-  }), [settings, progress, currentTheme, updateSettings, addPoints, availableThemes]);
+  }), [settings, progress, currentTheme, updateSettings, addPoints, emit, emitSync, on, once, off, availableThemes]);
 
   return (
     <RewardsContext.Provider value={contextValue}>

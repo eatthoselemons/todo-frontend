@@ -64,7 +64,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
   const { updateTask, deleteTask } = useTaskHooks();
-  const { settings, addPoints, progress } = useRewardsContext();
+  const { settings, emit, progress } = useRewardsContext();
 
   // Memoized computations
   const dueStatus = useMemo(() => {
@@ -102,20 +102,22 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     const previousState = task.internalState;
     task.nextState();
 
-    // Trigger sparkles if completing task and rewards are enabled
-    if (task.internalState === BaseState.DONE && settings.enabled && settings.animations) {
-      // Get position of the status chip for sparkle origin
+    // Emit theme event when task is completed
+    if (task.internalState === BaseState.DONE && settings.enabled) {
       const rect = e.currentTarget.getBoundingClientRect();
-      setSparklePos({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
+
+      // Emit task complete event - theme will handle effects and points
+      await emit('task:complete', {
+        taskId: task.id,
+        isRoot: depth === 0,
+        clientPos: {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2
+        },
+        targetElement: e.currentTarget as HTMLElement
       });
-      setSparkleTrigger(prev => prev + 1);
 
-      // Add points for task completion
-      await addPoints(10);
-
-      // Check for milestones and trigger liquid progress
+      // Check for milestones
       const nextTotalTasks = progress.totalTasks + 1;
       const nextLevel = Math.floor((progress.points + 10) / 100) + 1;
 
@@ -136,7 +138,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       // Normal update for non-root or non-complete transitions
       await updateTask(task);
     }
-  }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, settings.animations, addPoints, progress]);
+  }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, emit, progress]);
 
   const handleDelete = useCallback(async () => {
     if (window.confirm(`Delete "${task.text}" and all its children?`)) {

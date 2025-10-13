@@ -82,7 +82,8 @@ const tabContainer = css`
 const content = css`
   padding: 20px;
   overflow-y: auto;
-  flex: 1;
+  height: 400px;
+  flex-shrink: 0;
 `;
 
 const tabPanel = css`

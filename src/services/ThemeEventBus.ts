@@ -48,12 +48,7 @@ class ThemeEventBus {
   private emitter: Emittery<ThemeEventMap>;
 
   constructor() {
-    this.emitter = new Emittery<ThemeEventMap>({
-      debug: {
-        name: 'ThemeEventBus',
-        enabled: process.env.NODE_ENV === 'development',
-      },
-    });
+    this.emitter = new Emittery<ThemeEventMap>();
   }
 
   /**

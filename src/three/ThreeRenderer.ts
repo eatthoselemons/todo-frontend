@@ -16,6 +16,9 @@ export async function initThreeRenderer(container: HTMLElement) {
   container.appendChild(renderer.domElement);
 
   const scene = new ThreeModule.Scene();
+  // OrthographicCamera(left, right, top, bottom, near, far)
+  // For screen coordinates: left=0, right=width, top=height, bottom=0
+  // (THREE uses Y-up, but we flip it so top=height to match screen Y-down)
   const camera = new ThreeModule.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -1000, 1000);
 
   let running = false;
@@ -25,6 +28,7 @@ export async function initThreeRenderer(container: HTMLElement) {
   const onResize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     (camera as any).right = window.innerWidth;
+    (camera as any).top = 0;
     (camera as any).bottom = window.innerHeight;
     camera.updateProjectionMatrix();
   };
@@ -51,7 +55,14 @@ export async function initThreeRenderer(container: HTMLElement) {
   }
 
   function spriteAt(x: number, y: number, color = 0xffffff, size = 6) {
-    const mat = new ThreeModule.SpriteMaterial({ color, transparent: true, opacity: 0.9 });
+    const mat = new ThreeModule.SpriteMaterial({
+      color,
+      transparent: true,
+      opacity: 0.9,
+      // Make it circular by using a radial gradient effect
+      depthTest: false,
+      depthWrite: false
+    });
     const sp = new ThreeModule.Sprite(mat);
     sp.position.set(x, y, 0);
     sp.scale.setScalar(size);
@@ -64,18 +75,55 @@ export async function initThreeRenderer(container: HTMLElement) {
     const pick = () => colors[Math.floor(Math.random() * colors.length)];
     const count = Math.max(1, p.count || 1);
 
+    console.log('[ThreeRenderer] Creating particles', { origin, count, colors: p.colorSet });
+
+    // Convert screen coordinates to camera coordinates
+    // Screen: Y=0 at top, increases downward
+    // Camera: Y=0 at bottom, increases upward (with our flipped setup: top=height, bottom=0)
+    // So we need to flip Y: cameraY = windowHeight - screenY
+    const cameraX = origin.x;
+    const cameraY = window.innerHeight - origin.y;
+
     // Simple, cheap sprite bursts; can be replaced with instancing later
     for (let i = 0; i < count; i++) {
       const color = pick();
-      const size = 4 + Math.random() * 8;
-      const sp = spriteAt(origin.x, origin.y, color.getHex(), size);
+      const size = 8 + Math.random() * 16;
+
+      // Random spread around origin
+      const angle = Math.random() * Math.PI * 2;
+      const spread = 20 + Math.random() * 80;
+      const offsetX = Math.cos(angle) * spread;
+      const offsetY = Math.sin(angle) * spread;
+
+      const sp = spriteAt(cameraX + offsetX, cameraY + offsetY, color.getHex(), size);
       scene.add(sp);
       active.add(sp);
-      // Lifespan
-      setTimeout(() => {
-        scene.remove(sp);
-        active.delete(sp);
-      }, 600 + Math.random() * 400);
+
+      // Animate: fade out and move upward
+      const startY = cameraY + offsetY;
+      const startOpacity = 0.9;
+      const startTime = Date.now();
+      const duration = 800 + Math.random() * 400;
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Fade out
+        (sp.material as any).opacity = startOpacity * (1 - progress);
+
+        // Rise up (in camera space, +Y is up)
+        sp.position.y = startY + progress * 50;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          scene.remove(sp);
+          active.delete(sp);
+        }
+      };
+
+      requestAnimationFrame(animate);
     }
 
     ensureLoop();

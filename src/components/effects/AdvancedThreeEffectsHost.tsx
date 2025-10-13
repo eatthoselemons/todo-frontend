@@ -61,11 +61,15 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
     };
   }, [active]);
 
-  // Forward events
+  // Forward events - set up once on mount, use ref to track active state
+  const activeRef = useRef(active);
   useEffect(() => {
-    if (!active) return;
+    activeRef.current = active;
+  }, [active]);
 
+  useEffect(() => {
     const unsubParticles = on('theme:particle', (p) => {
+      if (!activeRef.current) return;
       // Non-blocking; ignore if renderer not yet ready
       if (rendererRef.current) {
         rendererRef.current.handleParticle(p);
@@ -73,6 +77,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
     });
 
     const unsubAnim = on('theme:animation', (a) => {
+      if (!activeRef.current) return;
       if (rendererRef.current) {
         rendererRef.current.handleAnimation(a);
       }
@@ -82,7 +87,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
       unsubParticles();
       unsubAnim();
     };
-  }, [on, active]);
+  }, [on]);
 
   // Pause on background
   useEffect(() => {
