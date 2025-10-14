@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Task, TaskID } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { Task, TaskID } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 
 interface AddTaskModalProps {
   showAddModal: boolean;
   setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
   parentTaskId: TaskID;
-  onClose?: () => {};
+  onClose?: () => void;
 }
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({
@@ -44,10 +44,17 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
         await createTask(new Task(newTaskName), parentTaskId);
         setTaskName("");
         close();
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error creating task:", e);
         setHasTaskNameError(true);
-        setTaskNameError("Failed to create task. Please try again.");
+        const msg = (e && (e.message || e.name)) || "";
+        if (/IndexedDB|blocked|disabled|denied|SecurityError/i.test(msg)) {
+          setTaskNameError(
+            "Unable to save data. Your browser is blocking local storage (IndexedDB). Try disabling private browsing or adjusting site storage settings."
+          );
+        } else {
+          setTaskNameError("Failed to create task. Please try again.");
+        }
       }
     })();
   };

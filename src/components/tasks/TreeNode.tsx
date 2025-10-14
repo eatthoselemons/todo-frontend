@@ -1,9 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
-import { Task, BaseState } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { Task, BaseState } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 import { AddTaskModal } from "./AddTaskModal";
+import { SparkleAnimation } from "../effects/SparkleAnimation";
+import { useRewardsContext } from "../../context/RewardsContext";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -13,6 +15,8 @@ interface TreeNodeProps {
   onToggle?: () => void;
   isExpanded: boolean;
   hasChildren: boolean;
+  onTaskComplete?: (task: Task) => void;
+  onMilestone?: (label: string, value: number) => void;
 }
 
 // Dynamic styles that change based on depth
@@ -51,11 +55,16 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   isExpanded,
   hasChildren,
+  onTaskComplete,
+  onMilestone,
 }) => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [yamlContent, setYamlContent] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sparkleTrigger, setSparkleTrigger] = useState(0);
+  const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
   const { updateTask, deleteTask } = useTaskHooks();
+  const { settings, emit, progress } = useRewardsContext();
 
   // Memoized computations
   const dueStatus = useMemo(() => {
@@ -89,10 +98,61 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     [task.internalState]
   );
 
-  const handleStatusClick = useCallback(async () => {
+  const handleStatusClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
+    const previousState = task.internalState;
     task.nextState();
-    await updateTask(task);
-  }, [task, updateTask]);
+
+    // Emit theme event when task is completed
+    if (task.internalState === BaseState.DONE && settings.enabled) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const rowElement = e.currentTarget.closest('.node-row') as HTMLElement;
+
+      // If task has children, emit branch:complete, otherwise task:complete
+      if (hasChildren) {
+        // Branch complete - show liquid fill animation
+        await emit('branch:complete', {
+          taskId: task.id,
+          clientPos: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          },
+          targetElement: rowElement || (e.currentTarget as HTMLElement)
+        });
+      } else {
+        // Regular task complete - show particle effects
+        await emit('task:complete', {
+          taskId: task.id,
+          isRoot: depth === 0,
+          clientPos: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          },
+          targetElement: e.currentTarget as HTMLElement
+        });
+      }
+
+      // Check for milestones
+      const nextTotalTasks = progress.totalTasks + 1;
+      const nextLevel = Math.floor((progress.points + 10) / 100) + 1;
+
+      if (onMilestone && (nextTotalTasks % 5 === 0 || nextLevel > progress.level)) {
+        if (nextLevel > progress.level) {
+          onMilestone(`Level ${nextLevel}!`, 100);
+        } else {
+          onMilestone(`${nextTotalTasks} Tasks!`, Math.min(100, (nextTotalTasks % 10) * 20));
+        }
+      }
+    }
+
+    // Check if task is being marked as done and it's a root task
+    if (task.internalState === BaseState.DONE && depth === 0 && onTaskComplete) {
+      // Trigger grace period instead of immediate update
+      onTaskComplete(task);
+    } else {
+      // Normal update for non-root or non-complete transitions
+      await updateTask(task);
+    }
+  }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, emit, progress]);
 
   const handleDelete = useCallback(async () => {
     if (window.confirm(`Delete "${task.text}" and all its children?`)) {
@@ -117,6 +177,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       <div
         className={`node ${depth === 0 ? "root" : ""}`}
         css={nodeStyle(depth)}
+        data-task-id={task.id}
       >
         <div className={`node-row ${stateClass}`} style={depth > 0 ? { position: 'relative' } : undefined}>
           <div
@@ -177,6 +238,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />
+
+      {settings.enabled && settings.animations && (
+        <SparkleAnimation
+          trigger={sparkleTrigger}
+          intensity={settings.intensity === 'minimal' ? 'minimal' : settings.intensity === 'extra' ? 'extra' : 'standard'}
+          x={sparklePos.x}
+          y={sparklePos.y}
+        />
+      )}
     </>
   );
 };

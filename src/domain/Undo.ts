@@ -19,7 +19,6 @@ export class Undo implements IUndo {
   constructor(public type: UndoStates, public task: Task) {}
 
   async undo(): Promise<Boolean> {
-    console.log("well, your mom"); // got'em
     return true;
   }
 }

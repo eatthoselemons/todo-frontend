@@ -1,8 +1,8 @@
 /** @jsxImportSource @emotion/react */
-import React from "react";
+import React, { useState } from "react";
 import { css } from "@emotion/react";
-import { TaskID } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { TaskID } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 
 interface MenuModalProps {
   showMenuModal: boolean;
@@ -81,6 +81,7 @@ export const MenuModal: React.FC<MenuModalProps> = ({
   onClose,
 }) => {
   const { clearSubTasks } = useTaskHooks();
+  const [error, setError] = useState<string | null>(null);
 
   const close = () => {
     onClose?.();
@@ -89,9 +90,11 @@ export const MenuModal: React.FC<MenuModalProps> = ({
 
   const submit = async () => {
     try {
+      setError(null);
       await clearSubTasks(taskId);
     } catch (e) {
-      // TODO handle errors
+      const msg = (e as any)?.message || String(e);
+      setError(msg || 'Failed to clear subtasks');
       return;
     }
     close();
@@ -103,7 +106,13 @@ export const MenuModal: React.FC<MenuModalProps> = ({
     <div css={modalOverlay} onClick={close}>
       <div css={modalCard} onClick={(e) => e.stopPropagation()}>
         <div css={modalHeader}>Menu</div>
-        <div css={modalContent}>{taskId}</div>
+        <div css={modalContent}>
+          <div className="small muted" style={{ marginBottom: 8 }}>Task ID</div>
+          <div style={{ wordBreak: 'break-all' }}>{taskId}</div>
+          {error && (
+            <div className="small error-text" style={{ marginTop: 8 }}>{error}</div>
+          )}
+        </div>
         <div css={modalActions}>
           <button css={button} onClick={close}>
             Cancel

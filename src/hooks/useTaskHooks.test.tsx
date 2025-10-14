@@ -1,14 +1,12 @@
 import PouchDB from "pouchdb";
 import React, { PropsWithChildren } from "react";
 import useTaskHooks from "./useTaskHooks";
-import { BaseState, ITask, Task, TaskID } from "../domain/Task";
+import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../domain/Task";
 import {
   TaskContextProvider,
   TaskContextProviderProps,
 } from "../context/TaskContext";
 import { renderHook } from "@testing-library/react";
-import { Simulate } from "react-dom/test-utils";
-import error = Simulate.error;
 
 const createWrapper = ({
   db = new PouchDB<ITask>("testTasks", { adapter: "memory" }),
@@ -82,7 +80,7 @@ describe("TaskService", () => {
 
     // Check that subTask has correct path
     const fetchedSubTask = await getTaskById(subTask.id);
-    expect(fetchedSubTask.path).toEqual(["root", rootTask.id, subTask.id]);
+    expect(fetchedSubTask.path).toEqual([ROOT_ID, rootTask.id, subTask.id]);
 
     // @formatter:off
     const uuidRegex = new RegExp("^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$");
@@ -190,7 +188,7 @@ describe("TaskService", () => {
 
     // Check path is correct
     let movedTask = await getTaskById(moveTestTask.id);
-    expect(movedTask.path).toEqual(["root", rootTask.id, subTask1.id, moveTestTask.id]);
+    expect(movedTask.path).toEqual([ROOT_ID, rootTask.id, subTask1.id, moveTestTask.id]);
 
     await moveTask(moveTestTask, subTask2);
 
@@ -200,7 +198,7 @@ describe("TaskService", () => {
 
     // Check new path is correct
     movedTask = await getTaskById(moveTestTask.id);
-    expect(movedTask.path).toEqual(["root", rootTask.id, subTask2.id, moveTestTask.id]);
+    expect(movedTask.path).toEqual([ROOT_ID, rootTask.id, subTask2.id, moveTestTask.id]);
 
     // task no longer under subtask1
     children1 = await getImmediateChildren(subTask1.id);
@@ -248,7 +246,7 @@ describe("TaskService", () => {
 
     // Check new task has correct path
     const newTask = await getTaskById(newTaskId);
-    expect(newTask.path).toEqual(["root", rootTask.id, subTask2.id, newTaskId]);
+    expect(newTask.path).toEqual([ROOT_ID, rootTask.id, subTask2.id, newTaskId]);
 
     //old task still under subtask1
     children1 = await getImmediateChildren(subTask1.id);
@@ -273,7 +271,7 @@ describe("TaskService", () => {
     expect((await getTaskById(subTask1.id)).internalState).toBe(
       BaseState.NOT_STARTED
     );
-    await taskStateChange(subTask1.id, "IN_PROGRESS");
+    await taskStateChange(subTask1.id, BaseState.IN_PROGRESS);
     expect((await getTaskById(subTask1.id)).state).toBe(
       BaseState.IN_PROGRESS
     );

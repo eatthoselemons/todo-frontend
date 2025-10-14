@@ -4,6 +4,7 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { CheckboxContextProvider } from "./context/CheckboxContext";
 import { TaskContextProvider } from "./context/TaskContext";
+import { RewardsProvider } from "./context/RewardsContext";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -12,7 +13,9 @@ root.render(
   <React.StrictMode>
     <CheckboxContextProvider>
       <TaskContextProvider>
-        <App />
+        <RewardsProvider>
+          <App />
+        </RewardsProvider>
       </TaskContextProvider>
     </CheckboxContextProvider>
   </React.StrictMode>

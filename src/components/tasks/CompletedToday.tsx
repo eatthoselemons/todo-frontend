@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Task } from "../domain/Task";
-import useTaskHooks from "../hooks/useTaskHooks";
+import { Task } from "../../domain/Task";
+import useTaskHooks from "../../hooks/useTaskHooks";
 
 const CompletedToday: React.FC = () => {
   const [startedToday, setStartedToday] = useState(0);
