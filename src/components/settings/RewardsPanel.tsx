@@ -41,8 +41,14 @@ export const RewardsPanel: React.FC<RewardsPanelProps> = ({
   onUpdateSettings,
 }) => {
   const handleToggle = (key: keyof RewardsSettings) => {
+    console.log('[RewardsPanel] handleToggle called with key:', key);
+    console.log('[RewardsPanel] Current value:', settings[key]);
+    console.log('[RewardsPanel] Type check:', typeof settings[key]);
     if (typeof settings[key] === 'boolean') {
+      console.log('[RewardsPanel] Toggling to:', !settings[key]);
       onUpdateSettings({ [key]: !settings[key] });
+    } else {
+      console.log('[RewardsPanel] Not a boolean, skipping toggle');
     }
   };
 
@@ -125,6 +131,16 @@ export const RewardsPanel: React.FC<RewardsPanelProps> = ({
             <Toggle
               active={settings.streaks}
               onClick={() => handleToggle('streaks')}
+            />
+          </SettingRow>
+
+          <SettingRow
+            label="Progression System"
+            description="Enable levels, XP, and milestone celebrations"
+          >
+            <Toggle
+              active={settings.progression}
+              onClick={() => handleToggle('progression')}
             />
           </SettingRow>
         </>
