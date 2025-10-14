@@ -41,14 +41,8 @@ export const RewardsPanel: React.FC<RewardsPanelProps> = ({
   onUpdateSettings,
 }) => {
   const handleToggle = (key: keyof RewardsSettings) => {
-    console.log('[RewardsPanel] handleToggle called with key:', key);
-    console.log('[RewardsPanel] Current value:', settings[key]);
-    console.log('[RewardsPanel] Type check:', typeof settings[key]);
     if (typeof settings[key] === 'boolean') {
-      console.log('[RewardsPanel] Toggling to:', !settings[key]);
       onUpdateSettings({ [key]: !settings[key] });
-    } else {
-      console.log('[RewardsPanel] Not a boolean, skipping toggle');
     }
   };
 

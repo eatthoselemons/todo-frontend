@@ -44,11 +44,9 @@ export const useSettings = (persistence: PersistenceService) => {
 
         if (doc && (doc as any).rewards) {
           const loadedSettings = (doc as any).rewards;
-          console.log('[useSettings] Loaded settings from DB:', loadedSettings);
 
           // Merge with defaults to ensure new fields exist
           const mergedSettings = { ...defaultSettings, ...loadedSettings };
-          console.log('[useSettings] Merged with defaults:', mergedSettings);
 
           setSettings(mergedSettings);
         }
@@ -64,11 +62,8 @@ export const useSettings = (persistence: PersistenceService) => {
 
   // Update settings
   const updateSettings = useCallback(async (updates: Partial<RewardsSettings>) => {
-    console.log('[useSettings] updateSettings called with:', updates);
     setSettings(prev => {
-      console.log('[useSettings] Previous settings:', prev);
       const updated = { ...prev, ...updates };
-      console.log('[useSettings] Updated settings:', updated);
 
       // Save asynchronously
       persistence.save('settings', { rewards: updated }, 'settings').catch(err => {
