@@ -55,17 +55,19 @@ export const useSettings = (persistence: PersistenceService) => {
 
   // Update settings
   const updateSettings = useCallback(async (updates: Partial<RewardsSettings>) => {
-    const updated = { ...settings, ...updates };
-    setSettings(updated);
+    setSettings(prev => {
+      const updated = { ...prev, ...updates };
 
-    try {
-      await persistence.save('settings', { rewards: updated }, 'settings');
-    } catch (err) {
-      console.error('Error saving settings:', err);
-      // Revert on error
-      setSettings(settings);
-    }
-  }, [settings, persistence]);
+      // Save asynchronously
+      persistence.save('settings', { rewards: updated }, 'settings').catch(err => {
+        console.error('Error saving settings:', err);
+        // Revert on error
+        setSettings(prev);
+      });
+
+      return updated;
+    });
+  }, [persistence]);
 
   return { settings, updateSettings, isLoading };
 };

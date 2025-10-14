@@ -53,23 +53,25 @@ export const useProgress = (persistence: PersistenceService) => {
 
   // Add points and update stats
   const addPoints = useCallback(async (delta: number) => {
-    const newProgress = {
-      ...progress,
-      points: progress.points + delta,
-      totalTasks: progress.totalTasks + 1,
-      level: Math.floor((progress.points + delta) / 100) + 1,
-      lastActive: new Date().toISOString().split('T')[0],
-    };
-    setProgress(newProgress);
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        points: prev.points + delta,
+        totalTasks: prev.totalTasks + 1,
+        level: Math.floor((prev.points + delta) / 100) + 1,
+        lastActive: new Date().toISOString().split('T')[0],
+      };
 
-    try {
-      await persistence.save('progress', newProgress, 'progress');
-    } catch (err) {
-      console.error('Error saving progress:', err);
-      // Revert on error
-      setProgress(progress);
-    }
-  }, [progress, persistence]);
+      // Save asynchronously
+      persistence.save('progress', newProgress, 'progress').catch(err => {
+        console.error('Error saving progress:', err);
+        // Revert on error
+        setProgress(prev);
+      });
+
+      return newProgress;
+    });
+  }, [persistence]);
 
   return { progress, addPoints, isLoading };
 };

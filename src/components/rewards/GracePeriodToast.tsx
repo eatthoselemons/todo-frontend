@@ -129,17 +129,19 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
 
   useEffect(() => {
     // Update local toasts when props change
-    const newToasts = new Map<string, ToastItem>();
-    toasts.forEach(toast => {
-      if (!localToasts.has(toast.id)) {
-        // New toast, set initial time
-        newToasts.set(toast.id, { ...toast, timeRemaining: GRACE_PERIOD });
-      } else {
-        // Existing toast, keep current time
-        newToasts.set(toast.id, localToasts.get(toast.id)!);
-      }
+    setLocalToasts(prev => {
+      const newToasts = new Map<string, ToastItem>();
+      toasts.forEach(toast => {
+        if (!prev.has(toast.id)) {
+          // New toast, set initial time
+          newToasts.set(toast.id, { ...toast, timeRemaining: GRACE_PERIOD });
+        } else {
+          // Existing toast, keep current time
+          newToasts.set(toast.id, prev.get(toast.id)!);
+        }
+      });
+      return newToasts;
     });
-    setLocalToasts(newToasts);
   }, [toasts]);
 
   useEffect(() => {

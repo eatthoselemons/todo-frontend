@@ -47,18 +47,10 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
   const themeRef = useRef(currentTheme);
   const addPointsRef = useRef(addPoints);
 
-  // Update refs when values change
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
-
-  useEffect(() => {
-    themeRef.current = currentTheme;
-  }, [currentTheme]);
-
-  useEffect(() => {
-    addPointsRef.current = addPoints;
-  }, [addPoints]);
+  // Update refs during render (no useEffect needed)
+  settingsRef.current = settings;
+  themeRef.current = currentTheme;
+  addPointsRef.current = addPoints;
 
   // Get available themes
   const availableThemes = useMemo(
