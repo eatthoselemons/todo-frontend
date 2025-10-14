@@ -47,12 +47,12 @@ const App: React.FC = () => {
 
   // Handle milestone animation
   const handleMilestone = useCallback((label: string, value: number) => {
-    if (settings.enabled && settings.animations) {
+    if (settings.enabled && settings.animations && settings.progression) {
       setLiquidProgressLabel(label);
       setLiquidProgressValue(value);
       setShowLiquidProgress(true);
     }
-  }, [settings.enabled, settings.animations]);
+  }, [settings.enabled, settings.animations, settings.progression]);
 
   // Handle task completion with grace period
   const handleTaskComplete = useCallback((task: Task) => {
@@ -91,7 +91,7 @@ const App: React.FC = () => {
       setPendingCompletions(prev => prev.filter(p => p.task.id !== taskId));
 
       // Check for milestone progress (every 5 tasks or at level boundaries)
-      if (settings.enabled && settings.animations) {
+      if (settings.enabled && settings.animations && settings.progression) {
         const nextTotalTasks = progress.totalTasks + 1;
         const nextLevel = Math.floor((progress.points + 10) / 100) + 1;
 
@@ -108,7 +108,7 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [pendingCompletions, updateTask, settings.enabled, settings.animations, progress]);
+  }, [pendingCompletions, updateTask, settings.enabled, settings.animations, settings.progression, progress]);
 
   useEffect(() => {
     const loadAndSeparateTasks = async () => {

@@ -66,10 +66,10 @@ const liquidStyle = css`
   &::after {
     content: '';
     position: absolute;
-    top: -5px;
+    top: -20px;
     left: 0;
     width: 200%;
-    height: 10px;
+    height: 40px;
     background: inherit;
     border-radius: 50%;
     animation: ${waveKeyframes} 2s linear infinite;
@@ -78,8 +78,9 @@ const liquidStyle = css`
   &::after {
     animation-duration: 1.5s;
     animation-direction: reverse;
-    opacity: 0.6;
-    top: -3px;
+    opacity: 0.7;
+    top: -15px;
+    height: 35px;
   }
 `;
 
@@ -102,14 +103,59 @@ export const LiquidNodeFill: React.FC<LiquidNodeFillProps> = ({
 
   useEffect(() => {
     if (show && targetElement) {
-      const elementRect = targetElement.getBoundingClientRect();
-      setRect(elementRect);
+      // Get the parent task's bounding rect
+      const parentRect = targetElement.getBoundingClientRect();
 
-      // Generate sparkles around the element
+      // Start with the parent's bottom as the baseline
+      let bottomMostY = parentRect.bottom;
+
+      // The parent element is the .node div
+      // Its next sibling is the children container div (if it has children)
+      let sibling = targetElement.nextElementSibling;
+
+      // Walk through siblings and descendants to find all child task nodes
+      // The structure is: <node> <div with children> <next node>
+      if (sibling && sibling instanceof HTMLElement) {
+        // Check if this sibling is the children container (not another .node)
+        const isChildrenContainer = !sibling.classList.contains('node');
+
+        if (isChildrenContainer) {
+          const computedStyle = window.getComputedStyle(sibling);
+          const isVisible = computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden';
+
+          if (isVisible) {
+            // Recursively find all .node elements within this container
+            const allDescendantNodes = sibling.querySelectorAll('.node');
+
+            allDescendantNodes.forEach((childNode) => {
+              const childRect = childNode.getBoundingClientRect();
+              if (childRect.height > 0) {
+                bottomMostY = Math.max(bottomMostY, childRect.bottom);
+              }
+            });
+          }
+        }
+      }
+
+      // Create a rect that spans from the top of the parent to the bottom of the deepest child
+      const fullRect = {
+        top: parentRect.top,
+        left: parentRect.left,
+        width: parentRect.width,
+        height: bottomMostY - parentRect.top,
+        bottom: bottomMostY,
+        right: parentRect.right,
+        x: parentRect.x,
+        y: parentRect.y,
+      } as DOMRect;
+
+      setRect(fullRect);
+
+      // Generate sparkles around the full area
       const newSparkles = Array.from({ length: 5 }, (_, i) => ({
         id: Date.now() + i,
-        x: Math.random() * elementRect.width,
-        y: Math.random() * elementRect.height,
+        x: Math.random() * fullRect.width,
+        y: Math.random() * fullRect.height,
         size: 3 + Math.random() * 5
       }));
       setSparkles(newSparkles);

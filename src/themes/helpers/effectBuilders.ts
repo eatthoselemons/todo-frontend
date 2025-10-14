@@ -33,14 +33,7 @@ export const buildTaskCompleteEffect = (
     animationDuration = 400,
   } = options;
 
-  const effect: EffectDescriptor = {
-    animations: [{
-      target: `task:${event.taskId}`,
-      kind: 'burst',
-      params: { scale: config.motionScale },
-      durationMs: animationDuration,
-    }],
-  };
+  const effect: EffectDescriptor = {};
 
   // Add particles if enabled
   if (config.particles > 0) {
