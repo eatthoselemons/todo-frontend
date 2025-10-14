@@ -105,17 +105,31 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     // Emit theme event when task is completed
     if (task.internalState === BaseState.DONE && settings.enabled) {
       const rect = e.currentTarget.getBoundingClientRect();
+      const rowElement = e.currentTarget.closest('.node-row') as HTMLElement;
 
-      // Emit task complete event - theme will handle effects and points
-      await emit('task:complete', {
-        taskId: task.id,
-        isRoot: depth === 0,
-        clientPos: {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2
-        },
-        targetElement: e.currentTarget as HTMLElement
-      });
+      // If task has children, emit branch:complete, otherwise task:complete
+      if (hasChildren) {
+        // Branch complete - show liquid fill animation
+        await emit('branch:complete', {
+          taskId: task.id,
+          clientPos: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          },
+          targetElement: rowElement || (e.currentTarget as HTMLElement)
+        });
+      } else {
+        // Regular task complete - show particle effects
+        await emit('task:complete', {
+          taskId: task.id,
+          isRoot: depth === 0,
+          clientPos: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          },
+          targetElement: e.currentTarget as HTMLElement
+        });
+      }
 
       // Check for milestones
       const nextTotalTasks = progress.totalTasks + 1;
@@ -163,6 +177,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       <div
         className={`node ${depth === 0 ? "root" : ""}`}
         css={nodeStyle(depth)}
+        data-task-id={task.id}
       >
         <div className={`node-row ${stateClass}`} style={depth > 0 ? { position: 'relative' } : undefined}>
           <div

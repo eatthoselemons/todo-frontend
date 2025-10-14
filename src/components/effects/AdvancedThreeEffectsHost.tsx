@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 import { useRewardsContext } from '../../context/RewardsContext';
 import type { ParticleEffect } from '../../types/theme';
+import { LiquidNodeFill } from './LiquidNodeFill';
+import { LiquidCelebrationSplash } from './LiquidCelebrationSplash';
 
 const containerStyle = css`
   position: fixed;
@@ -27,6 +29,15 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<RendererAPI | null>(null);
   const [ready, setReady] = useState(false);
+
+  // DOM-based animation states (for liquid fill, celebration splash, etc.)
+  const [fillTarget, setFillTarget] = useState<HTMLElement | null>(null);
+  const [showFill, setShowFill] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationCenter, setCelebrationCenter] = useState<{ x: number; y: number }>({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2
+  });
 
   // Only active for standard/extra
   const active = settings.enabled && settings.animations && (settings.intensity === 'standard' || settings.intensity === 'extra');
@@ -78,7 +89,20 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
 
     const unsubAnim = on('theme:animation', (a) => {
       if (!activeRef.current) return;
-      if (rendererRef.current) {
+
+      // Handle DOM-based animations (liquid fill, celebration splash)
+      if (a.kind === 'liquidFill') {
+        const target = a.targetElements && a.targetElements[0];
+        if (target) {
+          setFillTarget(target);
+          setShowFill(true);
+        }
+      } else if (a.kind === 'celebrationSplash') {
+        const origin = a.clientPos || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        setCelebrationCenter(origin);
+        setShowCelebration(true);
+      } else if (rendererRef.current) {
+        // Forward other animations to Three.js renderer
         rendererRef.current.handleAnimation(a);
       }
     });
@@ -103,7 +127,25 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
 
   if (!active) return null;
 
-  return <div ref={containerRef} css={containerStyle} aria-hidden={!ready} />;
+  return (
+    <>
+      <div ref={containerRef} css={containerStyle} aria-hidden={!ready} />
+
+      {/* DOM-based animations that work alongside Three.js */}
+      <LiquidNodeFill
+        targetElement={fillTarget}
+        show={showFill}
+        onComplete={() => setShowFill(false)}
+      />
+
+      <LiquidCelebrationSplash
+        show={showCelebration}
+        centerX={celebrationCenter.x}
+        centerY={celebrationCenter.y}
+        onComplete={() => setShowCelebration(false)}
+      />
+    </>
+  );
 };
 
 export default AdvancedThreeEffectsHost;
