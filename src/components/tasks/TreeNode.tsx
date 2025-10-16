@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { Task, BaseState } from "../../domain/Task";
 import useTaskHooks from "../../hooks/useTaskHooks";
 import { AddTaskModal } from "./AddTaskModal";
+import { YamlModal } from "./YamlModal";
 import { SparkleAnimation } from "../effects/SparkleAnimation";
 import { useRewardsContext } from "../../context/RewardsContext";
 
@@ -40,15 +41,6 @@ const chevronStyle = (depth: number, hasChildren: boolean) => css`
   margin-left: ${depth > 0 ? depth * 12 : 0}px;
 `;
 
-// Styles for hidden/visible content using CSS instead of conditional rendering
-const drawerStyle = (isOpen: boolean) => css`
-  display: ${isOpen ? 'block' : 'none'};
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  margin-top: 8px;
-`;
-
 const TreeNode: React.FC<TreeNodeProps> = ({
   task,
   depth,
@@ -58,8 +50,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onTaskComplete,
   onMilestone,
 }) => {
-  const [showDrawer, setShowDrawer] = useState(false);
-  const [yamlContent, setYamlContent] = useState("");
+  const [showYamlModal, setShowYamlModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
@@ -161,16 +152,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   }, [task.id, task.text, deleteTask]);
 
   const handleShowAddModal = useCallback(() => setShowAddModal(true), []);
-  const handleToggleDrawer = useCallback(() => setShowDrawer(prev => !prev), []);
-  const handleCloseDrawer = useCallback(() => setShowDrawer(false), []);
-  const handleYamlChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setYamlContent(e.target.value);
-  }, []);
-
-  const defaultYaml = useMemo(() =>
-    `text: ${task.text}\nstatus: ${task.internalState}\ndue: ${task.dueDate || ""}`,
-    [task.text, task.internalState, task.dueDate]
-  );
+  const handleShowYamlModal = useCallback(() => setShowYamlModal(true), []);
 
   return (
     <>
@@ -202,7 +184,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             <button className="text-btn" onClick={handleShowAddModal}>
               + Child
             </button>
-            <button className="text-btn" onClick={handleToggleDrawer}>
+            <button className="text-btn" onClick={handleShowYamlModal}>
               YAML
             </button>
             <button className="text-btn danger" onClick={handleDelete}>
@@ -211,32 +193,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </div>
         </div>
 
-        {/* Using CSS to hide/show drawer for better performance */}
-        <div css={drawerStyle(showDrawer)}>
-          <div className="row" style={{ marginBottom: "8px" }}>
-            <div className="muted small">Edit task properties (YAML format)</div>
-            <div className="spacer"></div>
-          </div>
-          <textarea
-            className="yaml"
-            value={yamlContent || defaultYaml}
-            onChange={handleYamlChange}
-            spellCheck={false}
-          />
-          <div className="row" style={{ marginTop: "8px" }}>
-            <div className="spacer"></div>
-            <button className="btn" onClick={handleCloseDrawer}>
-              Cancel
-            </button>
-            <button className="btn primary">Apply</button>
-          </div>
-        </div>
       </div>
 
       <AddTaskModal
         parentTaskId={task.id}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
+      />
+
+      <YamlModal
+        task={task}
+        showModal={showYamlModal}
+        setShowModal={setShowYamlModal}
       />
 
       {settings.enabled && settings.animations && (

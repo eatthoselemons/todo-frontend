@@ -5,6 +5,7 @@ import reportWebVitals from "./reportWebVitals";
 import { CheckboxContextProvider } from "./context/CheckboxContext";
 import { TaskContextProvider } from "./context/TaskContext";
 import { RewardsProvider } from "./context/RewardsContext";
+import { VimSettingsProvider } from "./context/VimSettingsContext";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -14,7 +15,9 @@ root.render(
     <CheckboxContextProvider>
       <TaskContextProvider>
         <RewardsProvider>
-          <App />
+          <VimSettingsProvider>
+            <App />
+          </VimSettingsProvider>
         </RewardsProvider>
       </TaskContextProvider>
     </CheckboxContextProvider>

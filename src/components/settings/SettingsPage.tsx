@@ -7,6 +7,7 @@ import { TabBar, Tab } from '../shared/TabBar';
 import { DatabaseDiagnostics } from './DatabaseDiagnostics';
 import { ProgressStats } from './ProgressStats';
 import { RewardsPanel } from './RewardsPanel';
+import { VimPanel } from './VimPanel';
 import { DangerZone } from './DangerZone';
 
 interface SettingsPageProps {
@@ -97,6 +98,7 @@ const tabPanel = css`
 const tabs: Tab[] = [
   { id: 'rewards', label: 'Rewards', icon: '🎉' },
   { id: 'progress', label: 'Progress', icon: '📊' },
+  { id: 'vim', label: 'Vim', icon: '⌨️' },
   { id: 'database', label: 'Database', icon: '💾' },
   { id: 'danger', label: 'Danger Zone', icon: '⚠️' },
 ];
@@ -133,6 +135,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose }) =
 
           <div css={tabPanel} className={activeTab === 'progress' ? 'active' : ''}>
             <ProgressStats progress={progress} />
+          </div>
+
+          <div css={tabPanel} className={activeTab === 'vim' ? 'active' : ''}>
+            <VimPanel />
           </div>
 
           <div css={tabPanel} className={activeTab === 'database' ? 'active' : ''}>
