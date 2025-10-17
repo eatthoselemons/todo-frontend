@@ -27,20 +27,15 @@ export const useProgress = (persistence: PersistenceService) => {
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const doc = await persistence.load('progress', {
-          _id: 'progress',
-          type: 'progress',
+        const doc = await persistence.load('rewards-progress', {
+          _id: 'rewards-progress',
+          type: 'rewards-progress',
           ...defaultProgress,
         } as any);
 
-        if (doc) {
-          setProgress({
-            points: (doc as any).points ?? 0,
-            level: (doc as any).level ?? 1,
-            totalTasks: (doc as any).totalTasks ?? 0,
-            lastActive: (doc as any).lastActive ?? defaultProgress.lastActive,
-          });
-        }
+        // Merge with defaults to ensure all fields exist
+        const mergedProgress = { ...defaultProgress, ...doc };
+        setProgress(mergedProgress);
       } catch (err) {
         console.error('Error loading progress:', err);
       } finally {
@@ -63,7 +58,7 @@ export const useProgress = (persistence: PersistenceService) => {
       };
 
       // Save asynchronously
-      persistence.save('progress', newProgress, 'progress').catch(err => {
+      persistence.save('rewards-progress', newProgress, 'rewards-progress').catch(err => {
         console.error('Error saving progress:', err);
         // Revert on error
         setProgress(prev);

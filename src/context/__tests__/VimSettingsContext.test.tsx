@@ -4,19 +4,21 @@ import PouchDB from 'pouchdb';
 import {
   VimSettingsProvider,
   useVimSettings,
-  VimSettingsProviderProps,
 } from '../VimSettingsContext';
+import { SettingsProvider } from '../SettingsContext';
 
 interface VimSettings {
   enabled: boolean;
   customCommands: string;
 }
 
-const createWrapper = ({
-  db = new PouchDB<VimSettings>('testVimSettings', { adapter: 'memory' }),
-}: VimSettingsProviderProps = {}): React.FC<{ children: React.ReactNode }> => {
+const createWrapper = (db?: PouchDB.Database): React.FC<{ children: React.ReactNode }> => {
   return ({ children }) => {
-    return <VimSettingsProvider db={db}>{children}</VimSettingsProvider>;
+    return (
+      <SettingsProvider db={db}>
+        <VimSettingsProvider>{children}</VimSettingsProvider>
+      </SettingsProvider>
+    );
   };
 };
 
@@ -24,9 +26,9 @@ describe('VimSettingsContext', () => {
   let dbCounter = 0;
 
   it('should provide default settings', async () => {
-    const db = new PouchDB<VimSettings>(`testVim${dbCounter++}`, { adapter: 'memory' });
+    const db = new PouchDB(`testSettings${dbCounter++}`, { adapter: 'memory' });
     const { result } = renderHook(() => useVimSettings(), {
-      wrapper: createWrapper({ db }),
+      wrapper: createWrapper(db),
     });
 
     // Wait for initial load
@@ -41,9 +43,9 @@ describe('VimSettingsContext', () => {
   });
 
   it('should update vim enabled setting', async () => {
-    const db = new PouchDB<VimSettings>(`testVim${dbCounter++}`, { adapter: 'memory' });
+    const db = new PouchDB(`testSettings${dbCounter++}`, { adapter: 'memory' });
     const { result } = renderHook(() => useVimSettings(), {
-      wrapper: createWrapper({ db }),
+      wrapper: createWrapper(db),
     });
 
     // Wait for initial load
@@ -61,9 +63,9 @@ describe('VimSettingsContext', () => {
   });
 
   it('should update custom commands', async () => {
-    const db = new PouchDB<VimSettings>(`testVim${dbCounter++}`, { adapter: 'memory' });
+    const db = new PouchDB(`testSettings${dbCounter++}`, { adapter: 'memory' });
     const { result } = renderHook(() => useVimSettings(), {
-      wrapper: createWrapper({ db }),
+      wrapper: createWrapper(db),
     });
 
     // Wait for initial load
@@ -83,9 +85,9 @@ describe('VimSettingsContext', () => {
   });
 
   it('should persist settings to database', async () => {
-    const db = new PouchDB<VimSettings>(`testVim${dbCounter++}`, { adapter: 'memory' });
+    const db = new PouchDB(`testSettings${dbCounter++}`, { adapter: 'memory' });
     const { result: result1 } = renderHook(() => useVimSettings(), {
-      wrapper: createWrapper({ db }),
+      wrapper: createWrapper(db),
     });
 
     // Wait for initial load
@@ -102,7 +104,7 @@ describe('VimSettingsContext', () => {
 
     // Create new hook instance with same db to verify persistence
     const { result: result2 } = renderHook(() => useVimSettings(), {
-      wrapper: createWrapper({ db }),
+      wrapper: createWrapper(db),
     });
 
     // Wait for settings to load

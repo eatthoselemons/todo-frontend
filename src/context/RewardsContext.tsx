@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, ReactNode, useMemo, useRef, useCallback } from 'react';
-import { useTaskContext } from './TaskContext';
+import { useSettingsContext } from './SettingsContext';
 import { ThemeModule } from '../types/theme';
 import { themeManager } from '../services/ThemeManager';
 import { effectsEngine } from '../services/EffectsEngine';
 import { themeEventBus, ThemeEventMap } from '../services/ThemeEventBus';
-import { PersistenceService } from '../services/PersistenceService';
 import { useSettings, RewardsSettings } from '../hooks/useSettings';
 import { useProgress, RewardsProgress } from '../hooks/useProgress';
 import { useTheme } from '../hooks/useTheme';
@@ -32,10 +31,7 @@ themeManager.registerTheme(liquidTheme);
 themeManager.registerTheme(minimalTheme);
 
 export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { db } = useTaskContext();
-
-  // Create persistence service
-  const persistence = useMemo(() => new PersistenceService(db), [db]);
+  const { persistence } = useSettingsContext();
 
   // Use composable hooks for state management
   const { settings, updateSettings } = useSettings(persistence);

@@ -36,20 +36,16 @@ export const useSettings = (persistence: PersistenceService) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const doc = await persistence.load('settings', {
-          _id: 'settings',
-          type: 'settings',
-          rewards: defaultSettings,
+        const doc = await persistence.load('rewards-settings', {
+          _id: 'rewards-settings',
+          type: 'rewards-settings',
+          ...defaultSettings,
         } as any);
 
-        if (doc && (doc as any).rewards) {
-          const loadedSettings = (doc as any).rewards;
+        // Merge with defaults to ensure new fields exist
+        const mergedSettings = { ...defaultSettings, ...doc };
 
-          // Merge with defaults to ensure new fields exist
-          const mergedSettings = { ...defaultSettings, ...loadedSettings };
-
-          setSettings(mergedSettings);
-        }
+        setSettings(mergedSettings);
       } catch (err) {
         console.error('Error loading settings:', err);
       } finally {
@@ -66,7 +62,7 @@ export const useSettings = (persistence: PersistenceService) => {
       const updated = { ...prev, ...updates };
 
       // Save asynchronously
-      persistence.save('settings', { rewards: updated }, 'settings').catch(err => {
+      persistence.save('rewards-settings', updated, 'rewards-settings').catch(err => {
         console.error('Error saving settings:', err);
         // Revert on error
         setSettings(prev);

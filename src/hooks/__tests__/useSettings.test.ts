@@ -11,17 +11,16 @@ describe('useSettings', () => {
   beforeEach(() => {
     mockPersistence = {
       load: jest.fn().mockResolvedValue({
-        _id: 'settings',
-        type: 'settings',
-        rewards: {
-          enabled: false,
-          intensity: 'standard',
-          theme: 'liquid',
-          animations: true,
-          sounds: false,
-          haptics: false,
-          streaks: false,
-        },
+        _id: 'rewards-settings',
+        type: 'rewards-settings',
+        enabled: false,
+        intensity: 'standard',
+        theme: 'liquid',
+        animations: true,
+        sounds: false,
+        haptics: false,
+        streaks: false,
+        progression: false,
       }),
       save: jest.fn().mockResolvedValue(undefined),
     } as any;
@@ -36,7 +35,7 @@ describe('useSettings', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(mockPersistence.load).toHaveBeenCalledWith('settings', expect.any(Object));
+    expect(mockPersistence.load).toHaveBeenCalledWith('rewards-settings', expect.any(Object));
     expect(result.current.settings.enabled).toBe(false);
   });
 
@@ -53,9 +52,9 @@ describe('useSettings', () => {
 
     expect(result.current.settings.enabled).toBe(true);
     expect(mockPersistence.save).toHaveBeenCalledWith(
-      'settings',
-      { rewards: expect.objectContaining({ enabled: true }) },
-      'settings'
+      'rewards-settings',
+      expect.objectContaining({ enabled: true }),
+      'rewards-settings'
     );
   });
 
@@ -103,17 +102,16 @@ describe('useSettings', () => {
     // Change persistence service - callback should change
     const newMockPersistence = {
       load: jest.fn().mockResolvedValue({
-        _id: 'settings',
-        type: 'settings',
-        rewards: {
-          enabled: false,
-          intensity: 'standard',
-          theme: 'liquid',
-          animations: true,
-          sounds: false,
-          haptics: false,
-          streaks: false,
-        },
+        _id: 'rewards-settings',
+        type: 'rewards-settings',
+        enabled: false,
+        intensity: 'standard',
+        theme: 'liquid',
+        animations: true,
+        sounds: false,
+        haptics: false,
+        streaks: false,
+        progression: false,
       }),
       save: jest.fn().mockResolvedValue(undefined),
     } as any;

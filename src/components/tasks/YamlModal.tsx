@@ -63,10 +63,7 @@ export const YamlModal: React.FC<YamlModalProps> = ({
       setSuccessMessage("Task updated successfully!");
       setIsLoading(false);
 
-      // Auto-close after a short delay
-      setTimeout(() => {
-        close();
-      }, 1000);
+      // Don't auto-close - let user close manually or make more edits
     } catch (err: any) {
       console.error("Error importing YAML:", err);
       setError(err.message || "Failed to import YAML. Please check the format.");

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { CheckboxContextProvider } from "./context/CheckboxContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import { TaskContextProvider } from "./context/TaskContext";
 import { RewardsProvider } from "./context/RewardsContext";
 import { VimSettingsProvider } from "./context/VimSettingsContext";
@@ -13,13 +14,15 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <CheckboxContextProvider>
-      <TaskContextProvider>
-        <RewardsProvider>
+      <SettingsProvider>
+        <TaskContextProvider>
           <VimSettingsProvider>
-            <App />
+            <RewardsProvider>
+              <App />
+            </RewardsProvider>
           </VimSettingsProvider>
-        </RewardsProvider>
-      </TaskContextProvider>
+        </TaskContextProvider>
+      </SettingsProvider>
     </CheckboxContextProvider>
   </React.StrictMode>
 );

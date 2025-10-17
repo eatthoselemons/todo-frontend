@@ -11,8 +11,8 @@ describe('useProgress', () => {
   beforeEach(() => {
     mockPersistence = {
       load: jest.fn().mockResolvedValue({
-        _id: 'progress',
-        type: 'progress',
+        _id: 'rewards-progress',
+        type: 'rewards-progress',
         points: 50,
         level: 1,
         totalTasks: 5,
@@ -31,7 +31,7 @@ describe('useProgress', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(mockPersistence.load).toHaveBeenCalledWith('progress', expect.any(Object));
+    expect(mockPersistence.load).toHaveBeenCalledWith('rewards-progress', expect.any(Object));
     expect(result.current.progress.points).toBe(50);
     expect(result.current.progress.totalTasks).toBe(5);
   });
@@ -50,9 +50,9 @@ describe('useProgress', () => {
     expect(result.current.progress.points).toBe(60);
     expect(result.current.progress.totalTasks).toBe(6);
     expect(mockPersistence.save).toHaveBeenCalledWith(
-      'progress',
+      'rewards-progress',
       expect.objectContaining({ points: 60, totalTasks: 6 }),
-      'progress'
+      'rewards-progress'
     );
   });
 
@@ -119,8 +119,8 @@ describe('useProgress', () => {
     // Change persistence service - callback should change
     const newMockPersistence = {
       load: jest.fn().mockResolvedValue({
-        _id: 'progress',
-        type: 'progress',
+        _id: 'rewards-progress',
+        type: 'rewards-progress',
         points: 100,
         level: 2,
         totalTasks: 10,

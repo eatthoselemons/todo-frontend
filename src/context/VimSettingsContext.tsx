@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useRef, PropsWithChildren } from 'react';
-import PouchDB from 'pouchdb';
+import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
+import { useSettingsContext } from './SettingsContext';
 
 interface VimSettings {
   enabled: boolean;
@@ -26,65 +26,42 @@ const defaultSettings: VimSettings = {
 `,
 };
 
-export interface VimSettingsProviderProps {
-  db?: PouchDB.Database<VimSettings>;
-}
-
-export const VimSettingsProvider: React.FC<PropsWithChildren<VimSettingsProviderProps>> = ({
-  children,
-  db: providedDb,
-}) => {
+export const VimSettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
+  const { persistence } = useSettingsContext();
   const [settings, setSettings] = useState<VimSettings>(defaultSettings);
-
-  // Use a ref to store the database instance - only create once
-  const dbRef = useRef<PouchDB.Database<VimSettings> | null>(null);
-
-  if (!dbRef.current) {
-    dbRef.current = providedDb || new PouchDB<VimSettings>('vim-settings');
-  }
-
-  const db = dbRef.current;
 
   // Load settings from database
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const doc = await db.get(VIM_SETTINGS_ID);
+        const doc = await persistence.load(VIM_SETTINGS_ID, {
+          _id: VIM_SETTINGS_ID,
+          type: 'vim-settings',
+          ...defaultSettings,
+        } as any);
+
         setSettings({
           enabled: doc.enabled ?? defaultSettings.enabled,
           customCommands: doc.customCommands ?? defaultSettings.customCommands,
         });
-      } catch (error: any) {
-        if (error.status === 404) {
-          // Settings don't exist, create them
-          await db.put({
-            _id: VIM_SETTINGS_ID,
-            ...defaultSettings,
-          } as any);
-        }
+      } catch (error) {
+        console.error('Error loading vim settings:', error);
       }
     };
 
     loadSettings();
-  }, [db]);
+  }, [persistence]);
 
   const updateSettings = async (updates: Partial<VimSettings>) => {
     const newSettings = { ...settings, ...updates };
     setSettings(newSettings);
 
     try {
-      const doc = await db.get(VIM_SETTINGS_ID);
-      await db.put({
-        ...doc,
-        ...newSettings,
-      });
-    } catch (error: any) {
-      if (error.status === 404) {
-        await db.put({
-          _id: VIM_SETTINGS_ID,
-          ...newSettings,
-        } as any);
-      }
+      await persistence.save(VIM_SETTINGS_ID, newSettings, 'vim-settings');
+    } catch (error) {
+      console.error('Error saving vim settings:', error);
+      // Revert on error
+      setSettings(settings);
     }
   };
 

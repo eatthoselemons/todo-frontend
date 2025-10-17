@@ -68,12 +68,16 @@ export const VimPanel: React.FC = () => {
   const { settings, updateSettings } = useVimSettings();
   const [customCommands, setCustomCommands] = React.useState(settings.customCommands);
   const [vimEnabled, setVimEnabled] = React.useState(settings.enabled);
+  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
 
   const handleSave = async () => {
+    setSaveStatus('saving');
     await updateSettings({
       enabled: vimEnabled,
       customCommands,
     });
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
   const handleReset = () => {
@@ -130,8 +134,13 @@ export const VimPanel: React.FC = () => {
           Reset to Default
         </button>
         <div style={{ flex: 1 }} />
-        <button className="btn primary" onClick={handleSave}>
-          Save Changes
+        {saveStatus === 'saved' && (
+          <span style={{ color: 'var(--accent)', marginRight: '12px', alignSelf: 'center' }}>
+            ✓ Settings saved
+          </span>
+        )}
+        <button className="btn primary" onClick={handleSave} disabled={saveStatus === 'saving'}>
+          {saveStatus === 'saving' ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
