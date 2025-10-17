@@ -53,8 +53,21 @@ export const YamlEditor = React.forwardRef<YamlEditorRef, YamlEditorProps>(({
     },
   }));
 
+  // Track applied mappings to avoid duplicates
+  const appliedMappingsRef = useRef<Array<{ lhs: string; context: string }>>([]);
+
   // Apply custom vim commands - memoized to avoid re-parsing on every render
   const applyVimCommands = React.useCallback(() => {
+    // Clear previous mappings
+    appliedMappingsRef.current.forEach(({ lhs, context }) => {
+      try {
+        Vim.unmap(lhs, context as any);
+      } catch {
+        // Ignore errors if mapping doesn't exist
+      }
+    });
+    appliedMappingsRef.current = [];
+
     if (settings.enabled && settings.customCommands) {
       const lines = settings.customCommands.split('\n');
       for (const line of lines) {
@@ -68,21 +81,25 @@ export const YamlEditor = React.forwardRef<YamlEditorRef, YamlEditorProps>(({
             const parts = trimmed.substring(6).trim().split(/\s+/);
             if (parts.length >= 2) {
               Vim.map(parts[0], parts[1], 'insert');
+              appliedMappingsRef.current.push({ lhs: parts[0], context: 'insert' });
             }
           } else if (trimmed.startsWith(':nmap ')) {
             const parts = trimmed.substring(6).trim().split(/\s+/);
             if (parts.length >= 2) {
               Vim.map(parts[0], parts[1], 'normal');
+              appliedMappingsRef.current.push({ lhs: parts[0], context: 'normal' });
             }
           } else if (trimmed.startsWith(':vmap ')) {
             const parts = trimmed.substring(6).trim().split(/\s+/);
             if (parts.length >= 2) {
               Vim.map(parts[0], parts[1], 'visual');
+              appliedMappingsRef.current.push({ lhs: parts[0], context: 'visual' });
             }
           } else if (trimmed.startsWith(':map ')) {
             const parts = trimmed.substring(5).trim().split(/\s+/);
             if (parts.length >= 2) {
               Vim.map(parts[0], parts[1], 'normal');
+              appliedMappingsRef.current.push({ lhs: parts[0], context: 'normal' });
             }
           }
         } catch (error) {
@@ -94,6 +111,18 @@ export const YamlEditor = React.forwardRef<YamlEditorRef, YamlEditorProps>(({
 
   useEffect(() => {
     applyVimCommands();
+
+    // Cleanup on unmount
+    return () => {
+      appliedMappingsRef.current.forEach(({ lhs, context }) => {
+        try {
+          Vim.unmap(lhs, context as any);
+        } catch {
+          // Ignore errors if mapping doesn't exist
+        }
+      });
+      appliedMappingsRef.current = [];
+    };
   }, [applyVimCommands]);
 
   // Initialize editor only once

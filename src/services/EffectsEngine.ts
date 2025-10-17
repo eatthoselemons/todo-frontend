@@ -10,6 +10,7 @@ class EffectsEngine {
   private soundCache: Map<string, HTMLAudioElement> = new Map();
   private imageCache: Map<string, HTMLImageElement> = new Map();
   private activeAnimations: Set<Animation> = new Set();
+  private activeAudioClones: Set<HTMLAudioElement> = new Set();
 
   /**
    * Preload a sound file for later playback
@@ -203,6 +204,17 @@ class EffectsEngine {
       const audioClone = audio.cloneNode() as HTMLAudioElement;
       audioClone.volume = sound.volume ?? 0.5;
 
+      // Track the clone and clean up when it ends
+      this.activeAudioClones.add(audioClone);
+
+      const cleanup = () => {
+        this.activeAudioClones.delete(audioClone);
+        audioClone.remove();
+      };
+
+      audioClone.addEventListener('ended', cleanup, { once: true });
+      audioClone.addEventListener('error', cleanup, { once: true });
+
       await audioClone.play();
     } catch (err) {
       // Autoplay might be blocked
@@ -246,11 +258,18 @@ class EffectsEngine {
   }
 
   /**
-   * Cancel all active animations
+   * Cancel all active animations and audio
    */
   cancelAll(): void {
     this.activeAnimations.forEach(anim => anim.cancel());
     this.activeAnimations.clear();
+
+    // Stop and remove all audio clones
+    this.activeAudioClones.forEach(audio => {
+      audio.pause();
+      audio.remove();
+    });
+    this.activeAudioClones.clear();
   }
 
   /**

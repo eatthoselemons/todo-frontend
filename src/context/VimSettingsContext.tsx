@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, PropsWithChildren } from 'react';
 import PouchDB from 'pouchdb';
 
 interface VimSettings {
@@ -32,9 +32,18 @@ export interface VimSettingsProviderProps {
 
 export const VimSettingsProvider: React.FC<PropsWithChildren<VimSettingsProviderProps>> = ({
   children,
-  db = new PouchDB<VimSettings>('vim-settings'),
+  db: providedDb,
 }) => {
   const [settings, setSettings] = useState<VimSettings>(defaultSettings);
+
+  // Use a ref to store the database instance - only create once
+  const dbRef = useRef<PouchDB.Database<VimSettings> | null>(null);
+
+  if (!dbRef.current) {
+    dbRef.current = providedDb || new PouchDB<VimSettings>('vim-settings');
+  }
+
+  const db = dbRef.current;
 
   // Load settings from database
   useEffect(() => {

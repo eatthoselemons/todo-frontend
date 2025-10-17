@@ -78,6 +78,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
     activeRef.current = active;
   }, [active]);
 
+  // Subscribe to events only ONCE on mount - use refs to avoid recreating subscriptions
   useEffect(() => {
     const unsubParticles = on('theme:particle', (p) => {
       if (!activeRef.current) return;
@@ -111,7 +112,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
       unsubParticles();
       unsubAnim();
     };
-  }, [on]);
+  }, []); // Empty deps - subscribe only once, use refs for dynamic values
 
   // Pause on background
   useEffect(() => {
