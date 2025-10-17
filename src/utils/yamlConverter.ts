@@ -6,6 +6,7 @@ import { TaskID } from '../domain/Task';
  * Simplified YAML representation of a task without internal metadata
  */
 export interface YamlTask {
+  id?: string;
   text: string;
   state?: string;
   dueDate?: string;
@@ -163,18 +164,25 @@ function processYamlChildren(
   const toUpdate: YamlParseResult['childrenToUpdate'] = [];
   const matchedIds = new Set<TaskID>();
 
-  // Match YAML children with existing children by text
+  // Match YAML children with existing children by ID (preferred) or text (fallback)
   for (const yamlChild of yamlChildren) {
-    // Try to find an existing child with matching text
     let matchedChild: Task | undefined;
-    for (const [id, existingChild] of existingChildrenMap) {
-      if (
-        existingChild.text === yamlChild.text &&
-        !matchedIds.has(id)
-      ) {
-        matchedChild = existingChild;
-        matchedIds.add(id);
-        break;
+
+    // First, try to match by ID if provided
+    if (yamlChild.id && existingChildrenMap.has(yamlChild.id)) {
+      matchedChild = existingChildrenMap.get(yamlChild.id);
+      matchedIds.add(yamlChild.id);
+    } else {
+      // Fallback: match by text for backwards compatibility
+      for (const [id, existingChild] of existingChildrenMap) {
+        if (
+          existingChild.text === yamlChild.text &&
+          !matchedIds.has(id)
+        ) {
+          matchedChild = existingChild;
+          matchedIds.add(id);
+          break;
+        }
       }
     }
 
