@@ -222,6 +222,7 @@ const TreeView: React.FC<TreeViewProps> = ({
     return (
       <React.Fragment key={taskId}>
         <TreeNode
+          key={taskId}
           task={task}
           depth={depth}
           onToggle={() => toggleExpand(taskId)}

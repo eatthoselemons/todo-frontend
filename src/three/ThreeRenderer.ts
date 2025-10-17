@@ -24,6 +24,7 @@ export async function initThreeRenderer(container: HTMLElement) {
   let running = false;
   let needsFrame = false;
   const active = new Set<THREE.Object3D>();
+  const activeRAFs = new Set<number>();
 
   const onResize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -105,7 +106,15 @@ export async function initThreeRenderer(container: HTMLElement) {
       const startTime = Date.now();
       const duration = 800 + Math.random() * 400;
 
+      let rafId: number | null = null;
+
       const animate = () => {
+        // Clear the RAF ID since this callback is now running
+        if (rafId !== null) {
+          activeRAFs.delete(rafId);
+          rafId = null;
+        }
+
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
@@ -116,14 +125,16 @@ export async function initThreeRenderer(container: HTMLElement) {
         sp.position.y = startY + progress * 50;
 
         if (progress < 1) {
-          requestAnimationFrame(animate);
+          rafId = requestAnimationFrame(animate);
+          activeRAFs.add(rafId);
         } else {
           scene.remove(sp);
           active.delete(sp);
         }
       };
 
-      requestAnimationFrame(animate);
+      rafId = requestAnimationFrame(animate);
+      activeRAFs.add(rafId);
     }
 
     ensureLoop();
@@ -144,6 +155,13 @@ export async function initThreeRenderer(container: HTMLElement) {
 
   function dispose() {
     window.removeEventListener('resize', onResize);
+
+    // Cancel all pending animation frames
+    activeRAFs.forEach(id => cancelAnimationFrame(id));
+    activeRAFs.clear();
+
+    running = false;
+
     try {
       renderer.dispose();
     } catch {}

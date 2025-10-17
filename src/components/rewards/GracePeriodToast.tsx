@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { css, keyframes } from "@emotion/react";
 import { Task, TaskID } from "../../domain/Task";
 
@@ -127,6 +127,14 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
   const [localToasts, setLocalToasts] = useState<Map<string, ToastItem>>(new Map());
   const [exitingToasts, setExitingToasts] = useState<Set<string>>(new Set());
 
+  // Use refs to avoid recreating interval on every state change
+  const onExpireRef = useRef(onExpire);
+  const timeoutIdsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
+
   useEffect(() => {
     // Update local toasts when props change
     setLocalToasts(prev => {
@@ -153,38 +161,49 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
         let hasChanges = false;
 
         updated.forEach((toast, id) => {
-          if (exitingToasts.has(id)) return;
+          setExitingToasts(current => {
+            if (current.has(id)) return current;
 
-          const newTime = toast.timeRemaining - UPDATE_INTERVAL;
-          if (newTime <= 0) {
-            // Time's up, trigger expiry
-            setExitingToasts(prev => new Set(prev).add(id));
-            setTimeout(() => {
-              onExpire(toast.task.id);
-              setExitingToasts(prev => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-              });
-            }, 300); // Wait for exit animation
-            updated.delete(id);
-            hasChanges = true;
-          } else {
-            updated.set(id, { ...toast, timeRemaining: newTime });
-            hasChanges = true;
-          }
+            const newTime = (toast.timeRemaining ?? 0) - UPDATE_INTERVAL;
+            if (newTime <= 0) {
+              // Time's up, trigger expiry
+              const timeoutId = setTimeout(() => {
+                onExpireRef.current(toast.task.id);
+                setExitingToasts(prev => {
+                  const next = new Set(prev);
+                  next.delete(id);
+                  return next;
+                });
+                timeoutIdsRef.current.delete(timeoutId);
+              }, 300); // Wait for exit animation
+
+              timeoutIdsRef.current.add(timeoutId);
+              updated.delete(id);
+              hasChanges = true;
+              return new Set(current).add(id);
+            } else {
+              updated.set(id, { ...toast, timeRemaining: newTime });
+              hasChanges = true;
+              return current;
+            }
+          });
         });
 
         return hasChanges ? updated : prev;
       });
     }, UPDATE_INTERVAL);
 
-    return () => clearInterval(interval);
-  }, [localToasts, exitingToasts, onExpire]);
+    return () => {
+      clearInterval(interval);
+      // Clear any pending timeouts
+      timeoutIdsRef.current.forEach(clearTimeout);
+      timeoutIdsRef.current.clear();
+    };
+  }, [localToasts.size]); // Only depend on size, not the entire map
 
   const handleUndo = useCallback((id: string, taskId: TaskID) => {
     setExitingToasts(prev => new Set(prev).add(id));
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       onUndo(taskId);
       setLocalToasts(prev => {
         const next = new Map(prev);
@@ -196,7 +215,9 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
         next.delete(id);
         return next;
       });
+      timeoutIdsRef.current.delete(timeoutId);
     }, 300);
+    timeoutIdsRef.current.add(timeoutId);
   }, [onUndo]);
 
   if (localToasts.size === 0 && exitingToasts.size === 0) return null;
