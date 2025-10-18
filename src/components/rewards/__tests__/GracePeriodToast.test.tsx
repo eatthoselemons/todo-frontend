@@ -3,8 +3,8 @@ import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { GracePeriodToast } from '../GracePeriodToast';
-import { Task, BaseState } from '../../../domain/Task';
+import { GracePeriodToast } from '../../../features/rewards/components/GracePeriodToast';
+import { Task, BaseState } from '../../../features/tasks/domain/Task';
 
 // Mock task helper
 const createMockTask = (id: string, text: string): Task => ({

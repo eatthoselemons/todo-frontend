@@ -5,7 +5,7 @@ import {
   exportTaskToYaml,
   importTaskFromYaml,
   YamlParseResult,
-} from '../utils/yamlConverter';
+} from '../../../utils/yamlConverter';
 
 export interface UseYamlExportReturn {
   exportTask: (task: Task) => Promise<string>;

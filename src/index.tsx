@@ -2,11 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import { CheckboxContextProvider } from "./context/CheckboxContext";
-import { SettingsProvider } from "./context/SettingsContext";
-import { TaskContextProvider } from "./context/TaskContext";
-import { RewardsProvider } from "./context/RewardsContext";
-import { VimSettingsProvider } from "./context/VimSettingsContext";
+import { CheckboxContextProvider } from "./features/tasks/context/CheckboxContext";
+import { SettingsProvider } from "./features/settings/context/SettingsContext";
+import { TaskContextProvider } from "./features/tasks/context/TaskContext";
+import { RewardsProvider } from "./features/rewards/context/RewardsContext";
+import { VimSettingsProvider } from "./features/settings/context/VimSettingsContext";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement

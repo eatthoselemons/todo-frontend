@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { css } from "@emotion/react";
 import { TaskID } from "../../domain/Task";
-import useTaskHooks from "../../hooks/useTaskHooks";
+import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
 
 interface MenuModalProps {
   showMenuModal: boolean;

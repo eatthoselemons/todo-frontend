@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useVimSettings } from '../../context/VimSettingsContext';
+import { useVimSettings } from '../context/VimSettingsContext';
 
 interface VimSettingsModalProps {
   showModal: boolean;

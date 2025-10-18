@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import TreeNode from '../tasks/TreeNode';
-import { Task, BaseState } from '../../domain/Task';
+import { Task, BaseState } from '../../features/tasks/domain/Task';
 
 // Create mocks before jest.mock calls
 const mockEmit = jest.fn().mockResolvedValue(undefined);
@@ -13,7 +13,7 @@ const mockUpdateTask = jest.fn().mockResolvedValue(undefined);
 const mockDeleteTask = jest.fn().mockResolvedValue(undefined);
 
 // Mock hooks
-jest.mock('../../hooks/useTaskHooks', () => ({
+jest.mock('../../features/tasks/hooks/useTaskHooks', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     updateTask: mockUpdateTask,
@@ -22,7 +22,7 @@ jest.mock('../../hooks/useTaskHooks', () => ({
 }));
 
 // Mock RewardsContext with event emission tracking
-jest.mock('../../context/RewardsContext', () => ({
+jest.mock('../../features/rewards/context/RewardsContext', () => ({
   __esModule: true,
   useRewardsContext: jest.fn(() => ({
     settings: { enabled: true, animations: true, intensity: 'standard' },
@@ -158,7 +158,7 @@ describe('TreeNode - Branch Complete Event', () => {
 
   it('should not emit any events when rewards are disabled', async () => {
     // Mock disabled rewards
-    jest.mock('../../context/RewardsContext', () => ({
+    jest.mock('../../features/rewards/context/RewardsContext', () => ({
       useRewardsContext: () => ({
         settings: { enabled: false, animations: true, intensity: 'standard' },
         emit: mockEmit,

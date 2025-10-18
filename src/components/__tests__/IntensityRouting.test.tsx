@@ -3,27 +3,24 @@ import React from 'react';
 import { render } from '@testing-library/react';
 
 // Mock App dependencies and RewardsContext for intensity routing
-jest.mock('../../context/RewardsContext', () => {
-  let settings = { enabled: true, animations: true, intensity: 'minimal' } as any;
-  return {
-    useRewardsContext: () => ({
-      settings,
-      on: () => () => {},
-    }),
-    __setSettings: (s: any) => { settings = s; },
-  };
-});
+let mockSettings = { enabled: true, animations: true, intensity: 'minimal' } as any;
+jest.mock('../../features/rewards/context/RewardsContext', () => ({
+  useRewardsContext: () => ({
+    settings: mockSettings,
+    on: () => () => {},
+  }),
+  __setSettings: (s: any) => { mockSettings = s; },
+}));
 
-jest.mock('../effects/ThemeEffectsHost', () => () => <div data-testid="dom-host" />);
-jest.mock('../effects/AdvancedThreeEffectsHost', () => () => <div data-testid="three-host" />);
+jest.mock('../../features/rewards/components/ThemeEffectsHost', () => () => <div data-testid="dom-host" />);
+jest.mock('../../features/rewards/components/AdvancedThreeEffectsHost', () => () => <div data-testid="three-host" />);
 
 // Access the mocked helper from the mocked module at runtime
-const { __setSettings } = require('../../context/RewardsContext') as any;
-import ThemeEffectsHost from '../effects/ThemeEffectsHost';
-import AdvancedThreeEffectsHost from '../effects/AdvancedThreeEffectsHost';
+const { __setSettings, useRewardsContext } = require('../../features/rewards/context/RewardsContext') as any;
+import ThemeEffectsHost from '../../features/rewards/components/ThemeEffectsHost';
+import AdvancedThreeEffectsHost from '../../features/rewards/components/AdvancedThreeEffectsHost';
 
 const Router: React.FC = () => {
-  const { useRewardsContext } = jest.requireActual('../../context/RewardsContext');
   const { settings } = useRewardsContext();
   return (
     <>

@@ -1,7 +1,7 @@
 // Minimal three.js overlay renderer for effects (lazy loaded)
 // This avoids heavy logic in tests; functions are small and resilient.
 
-import type { ParticleEffect } from '../types/theme';
+import type { ParticleEffect } from '../../types/theme';
 import type * as THREE from 'three';
 
 export async function initThreeRenderer(container: HTMLElement) {
@@ -173,4 +173,3 @@ export async function initThreeRenderer(container: HTMLElement) {
 
   return { dispose, pause, resume, handleParticle, handleAnimation };
 }
-

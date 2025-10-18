@@ -4,8 +4,8 @@ import PouchDB from 'pouchdb';
 import {
   VimSettingsProvider,
   useVimSettings,
-} from '../VimSettingsContext';
-import { SettingsProvider } from '../SettingsContext';
+} from '../../features/settings/context/VimSettingsContext';
+import { SettingsProvider } from '../../features/settings/context/SettingsContext';
 
 interface VimSettings {
   enabled: boolean;

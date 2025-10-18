@@ -250,15 +250,16 @@ describe('ThemeEventBus', () => {
     });
 
     it('should filter events', async () => {
+      const waitPromise = themeEventBus.waitFor('task:complete', {
+        filter: (d) => d.isRoot === true,
+      });
+
       setTimeout(() => {
         themeEventBus.emit('task:complete', { taskId: 'task-1' });
         themeEventBus.emit('task:complete', { taskId: 'task-2', isRoot: true });
       }, 10);
 
-      const data = await themeEventBus.waitFor('task:complete', {
-        filter: (d) => d.isRoot === true,
-      });
-
+      const data = await waitPromise;
       expect(data.taskId).toBe('task-2');
     });
 

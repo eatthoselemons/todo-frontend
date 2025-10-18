@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, PropsWithChildren } from 'react';
 import PouchDB from 'pouchdb';
-import { PersistenceService } from '../services/PersistenceService';
+import { PersistenceService } from '../../../shared/lib/PersistenceService';
 
 interface SettingsContextType {
   persistence: PersistenceService;

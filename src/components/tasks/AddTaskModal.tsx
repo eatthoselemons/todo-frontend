@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Task, TaskID } from "../../domain/Task";
-import useTaskHooks from "../../hooks/useTaskHooks";
+import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
 
 interface AddTaskModalProps {
   showAddModal: boolean;

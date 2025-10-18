@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { css } from "@emotion/react";
 import TreeNode from "./TreeNode";
 import { Task, TaskID } from "../../domain/Task";
-import useTaskHooks from "../../hooks/useTaskHooks";
+import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
 
 interface TreeViewProps {
   rootTaskIds: TaskID[];

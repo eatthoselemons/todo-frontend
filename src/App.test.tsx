@@ -2,11 +2,11 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import App from "./App";
-import { TaskContextProvider } from "./context/TaskContext";
-import { CheckboxContextProvider } from "./context/CheckboxContext";
-import { RewardsProvider } from "./context/RewardsContext";
+import { TaskContextProvider } from "./features/tasks/context/TaskContext";
+import { CheckboxContextProvider } from "./features/tasks/context/CheckboxContext";
+import { RewardsProvider } from "./features/rewards/context/RewardsContext";
 import PouchDB from "pouchdb";
-import { ITask } from "./domain/Task";
+import { ITask } from "./features/tasks/domain/Task";
 
 let testDb: PouchDB.Database<ITask> | undefined;
 

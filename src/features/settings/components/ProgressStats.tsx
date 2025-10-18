@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { css } from '@emotion/react';
-import { RewardsProgress } from '../../context/RewardsContext';
+import { RewardsProgress } from '../../../features/rewards/context/RewardsContext';
 
 interface ProgressStatsProps {
   progress: RewardsProgress;

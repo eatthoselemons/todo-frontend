@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PersistenceService } from '../services/PersistenceService';
-import { Intensity } from '../types/theme';
+import { PersistenceService } from '../../../shared/lib/PersistenceService';
+import { Intensity } from '../../rewards/types/theme';
 
 export interface RewardsSettings {
   enabled: boolean;
@@ -16,7 +16,7 @@ export interface RewardsSettings {
 const defaultSettings: RewardsSettings = {
   enabled: false,
   intensity: 'standard',
-  theme: 'liquid',
+  theme: 'minimal',
   animations: true,
   sounds: false,
   haptics: false,

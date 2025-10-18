@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Task } from "../../domain/Task";
-import { useYamlExport } from "../../hooks/useYamlExport";
+import { useYamlExport } from "../../features/tasks/hooks/useYamlExport";
 import { YamlEditor, YamlEditorRef } from "../editor/YamlEditor";
 
 interface YamlModalProps {
