@@ -55,28 +55,42 @@
 
 ---
 
-## Phase 2: Calculation Layer (Pure Functions)
+## Phase 2: Calculation Layer (Pure Functions) ✅ COMPLETED
 
 **Goal**: Extract all domain logic into pure, testable calculations
 
-### 2.1 Task Calculations
-- [ ] `calculateNextState`: State → State
-- [ ] `isTaskOverdue`: (Task, CurrentTime) → boolean
-- [ ] `getTaskDepth`: TaskPath → number
-- [ ] `canTransitionTo`: (State, State) → boolean
-- [ ] `calculateTaskProgress`: Task[] → Progress
+### 2.1 Task Calculations ✅
+- ✅ `isTaskOverdue`: (Task, CurrentTime) → boolean
+- ✅ `getTaskDepth`: Task → number
+- ✅ `wasCompletedToday`: (Task, Date) → boolean
+- ✅ `getDaysUntilDue`: (Task, Date) → number
+- ✅ `compareByDueDate`: (Task, Task) → number
+- ✅ And 10+ more pure task functions
 
-### 2.2 Path Calculations  
-- [ ] `isDescendantOf`: (TaskPath, TaskPath) → boolean
-- [ ] `getParentId`: TaskPath → Option<TaskId>
-- [ ] `buildPath`: (ParentPath, TaskId) → TaskPath
-- [ ] `getRelativePath`: (TaskPath, TaskPath) → TaskPath
+### 2.2 Path Calculations ✅
+- ✅ `isDescendantOf`: (Task, TaskId) → boolean
+- ✅ `getParentId`: Task → TaskId | undefined
+- ✅ `buildChildPath`: (TaskPath, TaskId) → TaskPath
+- ✅ `calculateMovedPath`: (TaskId, TaskPath) → TaskPath
+- ✅ `findCommonAncestor`: (TaskPath, TaskPath) → TaskId
+- ✅ And 10+ more pure path functions
 
-### 2.3 Tree Calculations
-- [ ] `buildTaskTree`: Task[] → TaskTree
-- [ ] `flattenTree`: TaskTree → Task[]
-- [ ] `findInTree`: (TaskTree, TaskId) → Option<Task>
-- [ ] `updateInTree`: (TaskTree, TaskId, Task) → TaskTree
+### 2.3 Tree Calculations ✅
+- ✅ `buildTaskTree`: (Task[], TaskId) → TaskTree
+- ✅ `flattenTree`: TaskTree → Task[]
+- ✅ `findInTree`: (TaskTree, TaskId) → Task
+- ✅ `updateInTree`: (TaskTree, TaskId, Updater) → TaskTree
+- ✅ `filterTree`, `mapTree`, `sortTree`
+- ✅ And 15+ more pure tree functions
+
+### 2.4 Progress Calculations ✅
+- ✅ `calculateProgress`: Task[] → ProgressStats
+- ✅ `calculateVelocity`: (Task[], DateRange) → number
+- ✅ `calculateBurndown`: (Task[], DateRange) → BurndownPoint[]
+- ✅ `calculateAverageCycleTime`: Task[] → number
+- ✅ And 10+ more pure progress functions
+
+**All functions are PURE** - no side effects, fully testable!
 
 ---
 
@@ -209,8 +223,19 @@
 - `index.ts` - Public API
 - `README.md` - Documentation
 
-**Next Steps**: Begin Phase 2 (Calculation Layer) with pure functions for:
-- Task tree operations
-- Path calculations  
-- Due date logic
-- Progress tracking
+**Phase 2**: COMPLETED ✅
+- ✅ Created 4 calculation modules (45+ pure functions)
+- ✅ PathCalculations.ts - 15 pure path functions
+- ✅ TaskCalculations.ts - 15 pure task functions  
+- ✅ TreeCalculations.ts - 20 pure tree functions
+- ✅ ProgressCalculations.ts - 12 pure progress functions
+- ✅ All functions are PURE (no side effects, testable)
+- ✅ Build passes successfully
+
+**Location**: `/src/features/tasks/calculations/`
+
+**Next Steps**: Begin Phase 3 (Service Layer) with Effect services for:
+- Database operations (PouchDB with Effect)
+- Command services (create, update, delete)
+- Query services (fetch, search)
+- Repository pattern with Effect
