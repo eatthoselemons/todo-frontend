@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react';
 import { useRewardsContext } from '../context/RewardsContext';
-import { SparkleAnimation } from './SparkleAnimation';
-import { LiquidCelebrationSplash } from './LiquidCelebrationSplash';
-import { LiquidNodeFill } from './LiquidNodeFill';
+import { SparkleAnimation } from '../../../components/effects/SparkleAnimation';
+import { LiquidCelebrationSplash } from '../themes/liquid/components/LiquidCelebrationSplash';
+import { LiquidNodeFill } from '../themes/liquid/components/LiquidNodeFill';
 
 // Central host that listens to theme bus events and renders visual effects
 export const ThemeEffectsHost: React.FC = () => {

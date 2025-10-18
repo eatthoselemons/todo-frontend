@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { Task, TaskID } from '../features/tasks/domain/Task';
+import { Task, TaskID } from '../domain/Task';
 import useTaskHooks from './useTaskHooks';
 import {
   exportTaskToYaml,
   importTaskFromYaml,
   YamlParseResult,
-} from '../utils/yamlConverter';
+} from '../../../utils/yamlConverter';
 
 export interface UseYamlExportReturn {
   exportTask: (task: Task) => Promise<string>;

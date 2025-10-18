@@ -13,7 +13,7 @@ const mockUpdateTask = jest.fn().mockResolvedValue(undefined);
 const mockDeleteTask = jest.fn().mockResolvedValue(undefined);
 
 // Mock hooks
-jest.mock('../../hooks/useTaskHooks', () => ({
+jest.mock('../../features/tasks/hooks/useTaskHooks', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     updateTask: mockUpdateTask,

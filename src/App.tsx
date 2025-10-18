@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
-import useTaskHooks from "./hooks/useTaskHooks";
+import useTaskHooks from "./features/tasks/hooks/useTaskHooks";
 import { useTaskContext } from "./features/tasks/context/TaskContext";
 import TreeView from "./components/tasks/TreeView";
 import TodayUpcoming from "./components/tasks/TodayUpcoming";

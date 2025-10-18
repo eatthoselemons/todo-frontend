@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
 import { Task, BaseState } from "../../domain/Task";
-import useTaskHooks from "../../hooks/useTaskHooks";
+import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
 import { AddTaskModal } from "./AddTaskModal";
 import { YamlModal } from "./YamlModal";
 import { SparkleAnimation } from "../effects/SparkleAnimation";
