@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
 import useTaskHooks from "./hooks/useTaskHooks";
-import { useTaskContext } from "./context/TaskContext";
+import { useTaskContext } from "./features/tasks/context/TaskContext";
 import TreeView from "./components/tasks/TreeView";
 import TodayUpcoming from "./components/tasks/TodayUpcoming";
 import CompletedToday from "./components/tasks/CompletedToday";
 import History from "./components/tasks/History";
 import DensityMenu from "./components/shared/DensityMenu";
 import { AddTaskModal } from "./components/tasks/AddTaskModal";
-import { GracePeriodToast } from "./components/rewards/GracePeriodToast";
-import { SettingsPage } from "./components/settings/SettingsPage";
-import { LiquidProgressAnimation } from "./components/effects/LiquidProgressAnimation";
-import { useRewardsContext } from "./context/RewardsContext";
-import ThemeEffectsHost from "./components/effects/ThemeEffectsHost";
-import AdvancedThreeEffectsHost from "./components/effects/AdvancedThreeEffectsHost";
+import { GracePeriodToast } from "./features/rewards/components/GracePeriodToast";
+import { SettingsPage } from "./features/settings/components/SettingsPage";
+import { LiquidProgressAnimation } from "./features/rewards/themes/liquid/components/LiquidProgressAnimation";
+import { useRewardsContext } from "./features/rewards/context/RewardsContext";
+import ThemeEffectsHost from "./features/rewards/components/ThemeEffectsHost";
+import AdvancedThreeEffectsHost from "./features/rewards/components/AdvancedThreeEffectsHost";
 import "./styles/app.css";
 
 const App: React.FC = () => {

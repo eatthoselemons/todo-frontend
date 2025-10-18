@@ -1,11 +1,11 @@
 import PouchDB from "pouchdb";
 import React, { PropsWithChildren } from "react";
 import useTaskHooks from "./useTaskHooks";
-import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../domain/Task";
+import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../features/tasks/domain/Task";
 import {
   TaskContextProvider,
   TaskContextProviderProps,
-} from "../context/TaskContext";
+} from "../features/tasks/context/TaskContext";
 import { renderHook } from "@testing-library/react";
 
 const createWrapper = ({

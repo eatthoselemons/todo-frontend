@@ -1,9 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useProgress } from '../useProgress';
-import { PersistenceService } from '../../services/PersistenceService';
+import { useProgress } from '../../features/settings/hooks/useProgress';
+import { PersistenceService } from '../../shared/lib/PersistenceService';
 
 // Mock PersistenceService
-jest.mock('../../services/PersistenceService');
+jest.mock('../../shared/lib/PersistenceService');
 
 describe('useProgress', () => {
   let mockPersistence: jest.Mocked<PersistenceService>;

@@ -1,11 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { css } from '@emotion/react';
-import { RewardsSettings } from '../../context/RewardsContext';
-import { Intensity } from '../../types/theme';
-import { SettingRow } from '../shared/SettingRow';
-import { Toggle } from '../shared/Toggle';
-import { ButtonGroup } from '../shared/ButtonGroup';
+import { RewardsSettings } from '../../../features/rewards/context/RewardsContext';
+import { Intensity } from '../../../features/rewards/types/theme';
+import { SettingRow } from '../../../components/shared/SettingRow';
+import { Toggle } from '../../../components/shared/Toggle';
+import { ButtonGroup } from '../../../components/shared/ButtonGroup';
 
 interface RewardsPanelProps {
   settings: RewardsSettings;

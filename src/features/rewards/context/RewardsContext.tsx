@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useEffect, ReactNode, useMemo, useRef, useCallback } from 'react';
-import { useSettingsContext } from './SettingsContext';
+import { useSettingsContext } from '../../settings/context/SettingsContext';
 import { ThemeModule } from '../types/theme';
 import { themeManager } from '../services/ThemeManager';
 import { effectsEngine } from '../services/EffectsEngine';
 import { themeEventBus, ThemeEventMap } from '../services/ThemeEventBus';
-import { useSettings, RewardsSettings } from '../hooks/useSettings';
-import { useProgress, RewardsProgress } from '../hooks/useProgress';
+import { useSettings, RewardsSettings } from '../../settings/hooks/useSettings';
+import { useProgress, RewardsProgress } from '../../settings/hooks/useProgress';
 import { useTheme } from '../hooks/useTheme';
-import liquidTheme from '../themes/liquid';
 import minimalTheme from '../themes/minimal';
 
 interface RewardsContextType {
@@ -27,7 +26,6 @@ interface RewardsContextType {
 const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
 
 // Register themes on module load
-themeManager.registerTheme(liquidTheme);
 themeManager.registerTheme(minimalTheme);
 
 export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

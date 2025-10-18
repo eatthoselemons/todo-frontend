@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { useTaskWatcher } from '../useTaskWatcher';
-import { Task } from '../../domain/Task';
+import { Task } from '../../features/tasks/domain/Task';
 import useTaskHooks from '../useTaskHooks';
 
 // Mock useTaskHooks

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PersistenceService } from '../services/PersistenceService';
+import { PersistenceService } from '../../../shared/lib/PersistenceService';
 
 export interface RewardsProgress {
   points: number;

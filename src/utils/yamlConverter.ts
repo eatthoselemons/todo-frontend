@@ -1,6 +1,6 @@
 import * as yaml from 'js-yaml';
-import { Task, ITask, BaseState } from '../domain/Task';
-import { TaskID } from '../domain/Task';
+import { Task, ITask, BaseState } from '../features/tasks/domain/Task';
+import { TaskID } from '../features/tasks/domain/Task';
 
 /**
  * Simplified YAML representation of a task without internal metadata

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Task, TaskID } from '../domain/Task';
+import { Task, TaskID } from '../features/tasks/domain/Task';
 import useTaskHooks from './useTaskHooks';
 import {
   exportTaskToYaml,

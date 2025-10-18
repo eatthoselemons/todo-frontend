@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/react';
 import PouchDB from 'pouchdb';
 import useTaskHooks from '../../hooks/useTaskHooks';
-import { Task, ROOT_ID } from '../../domain/Task';
+import { Task, ROOT_ID } from '../../tasks/domain/Task';
 
 interface DatabaseDiagnosticsProps {
   db: PouchDB.Database;

@@ -3,7 +3,7 @@ import React from 'react';
 import { render, act } from '@testing-library/react';
 
 // Mock RewardsContext to control settings
-jest.mock('../../context/RewardsContext', () => {
+jest.mock('../../features/rewards/context/RewardsContext', () => {
   const listeners: Record<string, Function[]> = {};
   return {
     useRewardsContext: () => ({
@@ -26,11 +26,11 @@ const resume = jest.fn();
 const handleParticle = jest.fn();
 const handleAnimation = jest.fn();
 
-jest.mock('../../three/ThreeRenderer', () => ({
+jest.mock('../../features/rewards/effects/three/ThreeRenderer', () => ({
   initThreeRenderer: jest.fn(async () => ({ dispose, pause, resume, handleParticle, handleAnimation })),
 }));
 
-import AdvancedThreeEffectsHost from '../effects/AdvancedThreeEffectsHost';
+import AdvancedThreeEffectsHost from '../../features/rewards/components/AdvancedThreeEffectsHost';
 
 describe('AdvancedThreeEffectsHost', () => {
   beforeEach(() => {
@@ -64,4 +64,3 @@ describe('AdvancedThreeEffectsHost', () => {
     expect(resume).toHaveBeenCalled();
   });
 });
-

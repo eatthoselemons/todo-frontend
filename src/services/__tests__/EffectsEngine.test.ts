@@ -1,5 +1,5 @@
-import { effectsEngine } from '../EffectsEngine';
-import { EffectDescriptor } from '../../types/theme';
+import { effectsEngine } from '../../features/rewards/services/EffectsEngine';
+import { EffectDescriptor } from '../../features/rewards/types/theme';
 
 describe('EffectsEngine', () => {
   beforeEach(() => {

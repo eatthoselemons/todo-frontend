@@ -1,9 +1,9 @@
-import { themeManager } from '../ThemeManager';
-import { ThemeModule } from '../../types/theme';
-import { effectsEngine } from '../EffectsEngine';
+import { themeManager } from '../../features/rewards/services/ThemeManager';
+import { ThemeModule } from '../../features/rewards/types/theme';
+import { effectsEngine } from '../../features/rewards/services/EffectsEngine';
 
 // Mock effectsEngine
-jest.mock('../EffectsEngine', () => ({
+jest.mock('../../features/rewards/services/EffectsEngine', () => ({
   effectsEngine: {
     preloadSound: jest.fn().mockResolvedValue(undefined),
     preloadImage: jest.fn().mockResolvedValue(undefined),

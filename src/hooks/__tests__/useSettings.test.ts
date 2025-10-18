@@ -1,9 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useSettings } from '../useSettings';
-import { PersistenceService } from '../../services/PersistenceService';
+import { useSettings } from '../../features/settings/hooks/useSettings';
+import { PersistenceService } from '../../shared/lib/PersistenceService';
 
 // Mock PersistenceService
-jest.mock('../../services/PersistenceService');
+jest.mock('../../shared/lib/PersistenceService');
 
 describe('useSettings', () => {
   let mockPersistence: jest.Mocked<PersistenceService>;

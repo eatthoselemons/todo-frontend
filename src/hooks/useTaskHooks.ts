@@ -1,6 +1,6 @@
 import { BaseState, ITask, Task, TaskID, ROOT_ID } from "../domain/Task";
 import { useMemo } from "react";
-import { useTaskContext } from "../context/TaskContext";
+import { useTaskContext } from "../features/tasks/context/TaskContext";
 
 const useTaskHooks = () => {
   const { db } = useTaskContext();

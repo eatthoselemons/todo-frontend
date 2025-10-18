@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { css } from '@emotion/react';
-import { useVimSettings } from '../../context/VimSettingsContext';
+import { useVimSettings } from '../context/VimSettingsContext';
 
 const sectionTitle = css`
   font-size: 16px;

@@ -1,4 +1,4 @@
-import { Task, BaseState, TaskID } from '../../domain/Task';
+import { Task, BaseState, TaskID } from '../../features/tasks/domain/Task';
 import {
   exportTaskToYaml,
   importTaskFromYaml,

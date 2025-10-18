@@ -1,4 +1,4 @@
-import { themeEventBus } from '../ThemeEventBus';
+import { themeEventBus } from '../../features/rewards/services/ThemeEventBus';
 
 describe('ThemeEventBus', () => {
   beforeEach(() => {

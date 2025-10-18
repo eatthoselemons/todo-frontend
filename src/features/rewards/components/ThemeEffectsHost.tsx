@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react';
-import { useRewardsContext } from '../../context/RewardsContext';
+import { useRewardsContext } from '../context/RewardsContext';
 import { SparkleAnimation } from './SparkleAnimation';
 import { LiquidCelebrationSplash } from './LiquidCelebrationSplash';
 import { LiquidNodeFill } from './LiquidNodeFill';

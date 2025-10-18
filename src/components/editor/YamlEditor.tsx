@@ -5,7 +5,7 @@ import { yaml } from '@codemirror/lang-yaml';
 import { vim, Vim } from '@replit/codemirror-vim';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
-import { useVimSettings } from '../../context/VimSettingsContext';
+import { useVimSettings } from '../../features/settings/context/VimSettingsContext';
 
 // Monokai syntax highlighting theme
 const monokaiHighlight = HighlightStyle.define([

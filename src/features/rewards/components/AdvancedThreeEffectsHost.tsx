@@ -1,10 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
-import { useRewardsContext } from '../../context/RewardsContext';
-import type { ParticleEffect } from '../../types/theme';
-import { LiquidNodeFill } from './LiquidNodeFill';
-import { LiquidCelebrationSplash } from './LiquidCelebrationSplash';
+import { useRewardsContext } from '../context/RewardsContext';
+import type { ParticleEffect } from '../types/theme';
+import { LiquidNodeFill } from '../themes/liquid/components/LiquidNodeFill';
+import { LiquidCelebrationSplash } from '../themes/liquid/components/LiquidCelebrationSplash';
 
 const containerStyle = css`
   position: fixed;
@@ -48,7 +48,7 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
 
     (async () => {
       try {
-        const mod = await import('../../three/ThreeRenderer');
+        const mod = await import('../effects/three/ThreeRenderer');
         if (cancelled) return;
         const api: RendererAPI = await mod.initThreeRenderer(containerRef.current!);
         if (cancelled) {
@@ -150,4 +150,3 @@ export const AdvancedThreeEffectsHost: React.FC = () => {
 };
 
 export default AdvancedThreeEffectsHost;
-

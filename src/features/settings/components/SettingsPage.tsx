@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState } from 'react';
 import { css } from '@emotion/react';
-import { useRewardsContext } from '../../context/RewardsContext';
-import { useTaskContext } from '../../context/TaskContext';
-import { TabBar, Tab } from '../shared/TabBar';
+import { useRewardsContext } from '../../../features/rewards/context/RewardsContext';
+import { useTaskContext } from '../../tasks/context/TaskContext';
+import { TabBar, Tab } from '../../../components/shared/TabBar';
 import { DatabaseDiagnostics } from './DatabaseDiagnostics';
 import { ProgressStats } from './ProgressStats';
 import { RewardsPanel } from './RewardsPanel';
