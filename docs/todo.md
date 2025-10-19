@@ -94,27 +94,37 @@
 
 ---
 
-## Phase 3: Service Layer (Effect Services)
+## Phase 3: Service Layer (Effect Services) ✅ COMPLETED
 
 **Goal**: Wrap actions (DB, side effects) in Effect services
 
-### 3.1 Create Repository Service
-- [ ] Define `TaskRepository` interface
-- [ ] Implement PouchDB adapter with Effect
-- [ ] Add proper error types (NotFound, ValidationError, etc.)
-- [ ] Use Effect.Service for DI
+### 3.1 Create Repository Service ✅
+- ✅ Define `TaskRepository` interface (13 methods)
+- ✅ Implement PouchDB adapter with Effect
+- ✅ Add proper error types (NotFound, DbError, ConstraintViolation, etc.)
+- ✅ Use Context.GenericTag for DI
+- ✅ Stream support for real-time updates
 
-### 3.2 Create Command Services  
-- [ ] `CreateTaskService`: Handle task creation
-- [ ] `UpdateTaskService`: Handle task updates
-- [ ] `DeleteTaskService`: Handle task deletion with cascade
-- [ ] `MoveTaskService`: Handle task moves with path updates
+### 3.2 Create Command Services ✅
+- ✅ `createTask`: Handle task creation with validation
+- ✅ `updateTaskText`: Update task text
+- ✅ `transitionTaskState`: State transitions
+- ✅ `completeTask`: Mark as done
+- ✅ `moveTask`: Move with cascade path updates
+- ✅ `deleteTask`: Delete with cascade
+- ✅ `clearSubtasks`: Delete children only
+- ✅ `setTaskDueDate`: Update due date
 
-### 3.3 Create Query Services
-- [ ] `GetTaskService`: Fetch single task
-- [ ] `GetTaskTreeService`: Fetch task hierarchy
-- [ ] `GetRootTasksService`: Fetch root tasks
-- [ ] `SearchTasksService`: Search functionality
+### 3.3 Create Query Services ✅
+- ✅ `getTask`: Fetch single task
+- ✅ `getTaskTree`: Build task hierarchy
+- ✅ `getRootTaskForest`: Get all root trees
+- ✅ `getOverdueTasks`: Filter overdue
+- ✅ `getTasksByState`: Filter by state
+- ✅ `searchTasks`: Text search
+- ✅ `getChildren`, `getDescendants`: Hierarchy queries
+
+**All using pipe composition (no Effect.gen)!**
 
 ---
 
@@ -234,8 +244,23 @@
 
 **Location**: `/src/features/tasks/calculations/`
 
-**Next Steps**: Begin Phase 3 (Service Layer) with Effect services for:
-- Database operations (PouchDB with Effect)
-- Command services (create, update, delete)
-- Query services (fetch, search)
-- Repository pattern with Effect
+**Phase 3**: COMPLETED ✅
+- ✅ Created error hierarchy (5 typed errors)
+- ✅ Implemented TaskRepository interface (13 methods)
+- ✅ Built PouchDBAdapter with Effect (wraps all I/O)
+- ✅ Created TaskQueryService (9 read operations)
+- ✅ Created TaskCommandService (8 write operations)
+- ✅ All using pipe composition (no Effect.gen!)
+- ✅ Stream support for real-time updates
+- ✅ Layer composition for dependency injection
+- ✅ Build passes successfully
+
+**Location**: 
+- `/src/features/tasks/infrastructure/` - Repository + errors
+- `/src/features/tasks/services/` - Query + Command services
+
+**Next Steps**: Phase 4-6 will migrate existing code to use new architecture:
+- Update useTaskHooks to use services
+- Convert React hooks to consume Effect services
+- Update UI components
+- Remove old code
