@@ -3,30 +3,36 @@
  * Combines Repository (I/O) + Calculations (pure logic)
  */
 
-import { Layer, pipe } from "effect";
+import { Layer } from "effect";
 
 // Query Service
-export {
-  type TaskQueryService,
-  TaskQueryService as TaskQueryServiceTag,
-  TaskQueryServiceLive,
-} from "./TaskQueryService";
+export { TaskQueryService } from "./TaskQueryService";
 
-// Command Service  
-export {
-  type TaskCommandService,
-  TaskCommandService as TaskCommandServiceTag,
-  TaskCommandServiceLive,
-} from "./TaskCommandService";
+// Command Service
+export { TaskCommandService } from "./TaskCommandService";
 
 /**
  * Complete service layer (both query and command services)
  * Note: Requires TaskRepository to be provided
+ *
+ * Usage:
+ *   const AppLive = Layer.mergeAll(
+ *     PouchDBTaskRepositoryLive(db),
+ *     TaskServicesLive
+ *   );
+ *
+ *   const program = Effect.gen(function* () {
+ *     const queries = yield* TaskQueryService;
+ *     const tasks = yield* queries.getAllTasks();
+ *     return tasks;
+ *   });
+ *
+ *   Effect.runPromise(program.pipe(Effect.provide(AppLive)));
  */
-import { TaskQueryService, TaskQueryServiceLive } from "./TaskQueryService";
-import { TaskCommandService, TaskCommandServiceLive } from "./TaskCommandService";
+import { TaskQueryService } from "./TaskQueryService";
+import { TaskCommandService } from "./TaskCommandService";
 
-export const TaskServicesLive = pipe(
-  Layer.effect(TaskQueryService, TaskQueryServiceLive),
-  Layer.merge(Layer.effect(TaskCommandService, TaskCommandServiceLive))
+export const TaskServicesLive = Layer.mergeAll(
+  TaskQueryService.Default,
+  TaskCommandService.Default
 );

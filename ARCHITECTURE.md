@@ -269,38 +269,58 @@ return Effect.gen(function* (_) {
 - **Services** depend on repository + calculations
 - **UI** depends on services
 
-### 10. Dependency Injection with Effect Layers
+### 10. Dependency Injection with Effect.Service
 
-**Use Context.GenericTag and Layer for DI.**
+**Use Effect.Service class pattern for services.**
 
 ```typescript
-// Define service tag
-export const TaskRepository = Context.GenericTag<TaskRepository>(
-  "@app/TaskRepository"
-);
+// Define service using Effect.Service pattern
+export class TaskQueryService extends Effect.Service<TaskQueryService>()(
+  "TaskQueryService",
+  {
+    effect: Effect.gen(function* () {
+      const repo = yield* TaskRepository;
 
-// Create Layer for implementation
-export const PouchDBTaskRepositoryLive = (db: PouchDB.Database) =>
-  Layer.succeed(TaskRepository, new PouchDBTaskRepository(db));
+      const getTask = (id: TaskId) => repo.getById(id);
+      const getAllTasks = () => repo.getAll();
 
-// Use in service
-export const TaskQueryServiceLive = pipe(
-  TaskRepository,  // Get dependency
-  Effect.map((repo) => new TaskQueryServiceImpl(repo))
-);
+      return {
+        getTask,
+        getAllTasks,
+      } as const;
+    }),
+    dependencies: [],
+  }
+) {
+  // Optional: Add test layer
+  static Test = this.Default.pipe(
+    Layer.provide(InMemoryTaskRepositoryTest)
+  );
+}
+
+// Use in application
+const program = Effect.gen(function* () {
+  const queries = yield* TaskQueryService;
+  const tasks = yield* queries.getAllTasks();
+  return tasks;
+});
 
 // Compose layers
-export const TaskServicesLive = pipe(
-  Layer.effect(TaskQueryService, TaskQueryServiceLive),
-  Layer.merge(Layer.effect(TaskCommandService, TaskCommandServiceLive))
+const AppLive = Layer.mergeAll(
+  PouchDBTaskRepositoryLive(db),
+  TaskQueryService.Default,
+  TaskCommandService.Default
 );
+
+Effect.runPromise(program.pipe(Effect.provide(AppLive)));
 ```
 
 **Why:**
-- No global state
-- Testable (provide mock layers)
-- Composable
-- Type-safe
+- Clean, official Effect pattern
+- Automatic layer creation with `.Default`
+- Easy test layers with `.Test`
+- No manual Context.GenericTag needed
+- Type-safe dependency injection
 
 ## Code Conventions
 
@@ -568,27 +588,44 @@ moveTask(taskId: TaskId, newParentId: TaskId): Effect<void, ...> {
 }
 ```
 
-### Pattern 6: Layer Composition
+### Pattern 6: Effect.Service Pattern
 
 ```typescript
-// Individual service layer
-export const MyServiceLive = pipe(
-  MyDependency,  // Get dependency
-  Effect.map((dep) => new MyServiceImpl(dep))
+// Define service using Effect.Service class
+export class MyService extends Effect.Service<MyService>()("MyService", {
+  effect: Effect.gen(function* () {
+    const dependency = yield* MyDependency;
+
+    const doSomething = (input: string) =>
+      pipe(
+        dependency.fetch(input),
+        Effect.map((data) => transform(data))
+      );
+
+    return {
+      doSomething,
+    } as const;
+  }),
+  dependencies: [],
+}) {
+  // Optional: Test layer
+  static Test = this.Default.pipe(Layer.provide(MyDependencyMock));
+}
+
+// Compose multiple services
+export const AllServicesLive = Layer.mergeAll(
+  ServiceA.Default,
+  ServiceB.Default,
+  ServiceC.Default
 );
 
-// Combine multiple layers
-export const AllServicesLive = pipe(
-  Layer.effect(ServiceA, ServiceALive),
-  Layer.merge(Layer.effect(ServiceB, ServiceBLive)),
-  Layer.merge(Layer.effect(ServiceC, ServiceCLive))
-);
+// Use in application
+const program = Effect.gen(function* () {
+  const service = yield* MyService;
+  return yield* service.doSomething("input");
+});
 
-// Provide dependencies
-const runtime = pipe(
-  AllServicesLive,
-  Layer.provide(RepositoryLive(db))
-);
+Effect.runPromise(program.pipe(Effect.provide(AllServicesLive)));
 ```
 
 ## Anti-Patterns (What NOT to Do)

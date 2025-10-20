@@ -9,13 +9,15 @@ This is a todo app being refactored to follow **Domain-Driven Design**, **Grokki
 **READ `ARCHITECTURE.md` FIRST** - It contains all the design principles and patterns we follow.
 
 Key rules:
-1. **Composition over inheritance** - Use `const` + `pipe`, never `class extends`
+1. **Composition over inheritance** - Use `const` + `pipe` for our types, never `class extends` on domain types (Effect core types are fine to extend)
 2. **Schema-first** - Define Schema, extract type, create constructor
 3. **No primitive obsession** - All primitives wrapped in branded types
 4. **Immutability** - Never mutate, always return new instances
 5. **Pure calculations** - Separate from actions (side effects)
 6. **Effect for I/O** - All side effects wrapped in Effect
-7. **Pipe composition** - Never use `Effect.gen`, always use `pipe`
+7. **Pipe composition** - Prefer `pipe` over `Effect.gen` in most cases
+8. **Layer-based DI** - Services use Layer.effect with Context, never `this`
+9. **No void returns** - All operations that can error return Effect
 
 ## Current State
 
@@ -110,14 +112,17 @@ export type TaskId = string & Brand.Brand<"TaskId">;
 export const TaskIdSchema = Schema.String.pipe(...);
 ```
 
-### ALWAYS Use Pure Composition
+### ALWAYS Use Pure Composition for Domain Types
 
 ```typescript
-// ✅ CORRECT
-export const XSchema = Schema.Y.pipe(...);
+// ✅ CORRECT - Our domain types use composition
+export const TaskIdSchema = Schema.String.pipe(...);
 
-// ❌ NEVER use extends
-export class XSchema extends Schema.Y.pipe(...) {}
+// ❌ NEVER use extends for OUR types
+export class TaskIdSchema extends Schema.String.pipe(...) {}
+
+// ✅ CORRECT - Effect core types can use extends when needed
+export class MyError extends Data.TaggedError("MyError")<{ message: string }> {}
 ```
 
 ## Commands
@@ -155,8 +160,9 @@ npx tsc --noEmit
 
 ## Do NOT
 
-- ❌ Use `class ... extends` (inheritance)
-- ❌ Use `Effect.gen` (causes type errors)
+- ❌ Use `class ... extends` for domain types (Effect core types OK)
+- ❌ Use `this` in services (use Layer.effect with Context instead)
+- ❌ Return `void` from operations that can error (use Effect)
 - ❌ Use primitive types in domain (`string`, `number`)
 - ❌ Mutate objects
 - ❌ Mix I/O and logic in same function
@@ -165,14 +171,16 @@ npx tsc --noEmit
 
 ## DO
 
-- ✅ Use `pipe` for composition
+- ✅ Use `pipe` for composition (Effect.gen OK in Layer.effect)
 - ✅ Use Schema-first branded types
 - ✅ Make everything immutable
 - ✅ Separate calculations from actions
 - ✅ Pass time as parameters
-- ✅ Use Effect for I/O
+- ✅ Use Effect for I/O and all error-prone operations
 - ✅ Use discriminated unions
 - ✅ Test with pure data
+- ✅ Use Layer.effect for services (no classes/this)
+- ✅ Return Effect from all operations that can error
 
 ---
 
