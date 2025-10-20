@@ -42,6 +42,34 @@ export class TaskCommandService extends Effect.Service<TaskCommandService>()(
     effect: Effect.gen(function* () {
       const repo = yield* TaskRepository;
 
+      /**
+       * Ensure root task exists (business logic - not in Repository)
+       * Idempotent - safe to call multiple times
+       */
+      const ensureRootExists = (): Effect.Effect<void, DbError | InvalidTaskTextError> =>
+        pipe(
+          repo.exists(ROOT_TASK_ID),
+          Effect.flatMap((exists) => {
+            if (exists) {
+              return Effect.void;
+            }
+
+            // Create root task using domain logic
+            return pipe(
+              createTask({
+                text: "root",
+                parentPath: [] as any as TaskPath,
+                dueDate: undefined,
+              }),
+              Effect.flatMap((rootTask) => {
+                // Override the generated ID with ROOT_TASK_ID
+                const root = { ...rootTask, id: ROOT_TASK_ID, path: makeTaskPath([ROOT_TASK_ID]) };
+                return repo.save(root);
+              })
+            );
+          })
+        );
+
       const createTask_ = (params: {
         text: string;
         parentId?: TaskId;
@@ -50,7 +78,8 @@ export class TaskCommandService extends Effect.Service<TaskCommandService>()(
         const parentId = params.parentId ?? ROOT_TASK_ID;
 
         return pipe(
-          repo.getById(parentId),
+          ensureRootExists(),
+          Effect.flatMap(() => repo.getById(parentId)),
           Effect.catchTag("NotFoundError", () =>
             Effect.fail(
               new InvalidTaskTextError(`Parent task not found: ${parentId}`)

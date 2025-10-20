@@ -40,7 +40,7 @@ export interface TaskRepository {
    */
   readonly getDescendants: (
     ancestorId: TaskId
-  ) => Effect.Effect<ReadonlyArray<Task>, DbError>;
+  ) => Effect.Effect<ReadonlyArray<Task>, NotFoundError | DbError>;
 
   /**
    * Save task (create or update)

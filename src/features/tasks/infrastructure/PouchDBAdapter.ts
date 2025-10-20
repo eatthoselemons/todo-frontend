@@ -1,6 +1,10 @@
 /**
  * PouchDB Adapter - Implements TaskRepository with PouchDB
  * Following Effect patterns for side effects
+ * 
+ * Uses efficient hierarchical queries with PouchDB views:
+ * - tasks/by_full_path: Range queries for descendants
+ * - tasks/by_parent: Direct queries for immediate children
  */
 
 import { Effect, Stream, Layer } from "effect";
@@ -8,13 +12,73 @@ import PouchDB from "pouchdb";
 import { Task, TaskId, ROOT_TASK_ID, toLegacy, fromLegacy, LegacyTask } from "../domain";
 import { TaskRepository } from "./TaskRepository";
 import { NotFoundError, DbError } from "./errors";
-import { isImmediateChildOf } from "../calculations";
+
+/**
+ * Design document for efficient hierarchical queries
+ * Following the path-based pattern from CouchDB best practices
+ */
+const TASKS_DDOC = {
+  _id: "_design/tasks",
+  views: {
+    // Query by full path array - enables efficient descendants queries
+    // Using startkey/endkey range on path arrays
+    by_full_path: {
+      map: `function (doc) {
+        if (doc.type === "task" && Array.isArray(doc.path)) {
+          emit(doc.path, null);
+        }
+      }`,
+    },
+    // Query by parent ID - enables efficient immediate children queries
+    by_parent: {
+      map: `function (doc) {
+        if (doc.type === "task" && Array.isArray(doc.path) && doc.path.length > 1) {
+          var parentId = doc.path[doc.path.length - 2];
+          emit(parentId, null);
+        }
+      }`,
+    },
+    // Query by type - speeds up getAll without in-memory filtering
+    by_type: {
+      map: `function (doc) {
+        if (doc.type) {
+          emit(doc.type, null);
+        }
+      }`,
+    },
+  },
+};
 
 /**
  * PouchDB implementation of TaskRepository
  */
 export class PouchDBTaskRepository implements TaskRepository {
   constructor(private readonly db: PouchDB.Database<LegacyTask>) {}
+
+  /**
+   * Ensure views are created in the database
+   * Idempotent - safe to call multiple times
+   */
+  private ensureViews(): Effect.Effect<void, DbError> {
+    return Effect.tryPromise({
+      try: async () => {
+        try {
+          const ddoc: any = await this.db.get(TASKS_DDOC._id);
+          const next = { ...ddoc, views: TASKS_DDOC.views };
+          if (JSON.stringify(ddoc.views) !== JSON.stringify(TASKS_DDOC.views)) {
+            await this.db.put(next);
+          }
+        } catch (e: any) {
+          if (e.status === 404) {
+            await this.db.put(TASKS_DDOC as any);
+          } else {
+            throw e;
+          }
+        }
+      },
+      catch: (error) => DbError.make(error, "ensureViews"),
+    }).pipe(Effect.asVoid);
+  }
 
   /**
    * Get task by ID
@@ -33,55 +97,104 @@ export class PouchDBTaskRepository implements TaskRepository {
 
   /**
    * Get all tasks (excluding root)
+   * Uses the by_type view for efficient filtering
    */
   getAll(): Effect.Effect<ReadonlyArray<Task>, DbError> {
-    return Effect.tryPromise({
-      try: () => this.db.allDocs({ include_docs: true }),
-      catch: (error) => DbError.make(error, "getAll"),
-    }).pipe(
+    return this.ensureViews().pipe(
+      Effect.flatMap(() =>
+        Effect.tryPromise({
+          try: () =>
+            this.db.query("tasks/by_type", {
+              key: "task",
+              include_docs: true,
+            }),
+          catch: (error) => DbError.make(error, "getAll"),
+        })
+      ),
       Effect.map((result) =>
         result.rows
-          .filter((row: any) => row.doc && row.doc.type === "task")
+          .filter((row: any) => row.doc && row.doc._id !== ROOT_TASK_ID)
           .map((row: any) => fromLegacy(row.doc as LegacyTask))
-          .filter((task) => task.id !== ROOT_TASK_ID)
       )
     );
   }
 
   /**
    * Get immediate children of a parent
+   * Uses the by_parent view for efficient DB-level filtering
    */
-  getImmediateChildren(parentId: TaskId): Effect.Effect<ReadonlyArray<Task>, DbError> {
-    return this.getAll().pipe(
-      Effect.map((allTasks) =>
-        allTasks.filter((task) => isImmediateChildOf(task, parentId))
+  getImmediateChildren(
+    parentId: TaskId
+  ): Effect.Effect<ReadonlyArray<Task>, DbError> {
+    return this.ensureViews().pipe(
+      Effect.flatMap(() =>
+        Effect.tryPromise({
+          try: () =>
+            this.db.query("tasks/by_parent", {
+              key: parentId,
+              include_docs: true,
+            }),
+          catch: (error) => DbError.make(error, "getImmediateChildren"),
+        })
+      ),
+      Effect.map((result) =>
+        result.rows
+          .filter((row: any) => row.doc && row.doc.type === "task")
+          .map((row: any) => fromLegacy(row.doc as LegacyTask))
       )
     );
   }
 
   /**
    * Get root-level tasks
+   * Pure DB query - business logic (ensuring root exists) moved to Service layer
    */
   getRootTasks(): Effect.Effect<ReadonlyArray<Task>, DbError> {
-    return this.ensureRootExists().pipe(
-      Effect.flatMap(() => this.getAll()),
-      Effect.map((allTasks) =>
-        allTasks.filter((task) => isImmediateChildOf(task, ROOT_TASK_ID))
-      )
-    );
+    return this.getImmediateChildren(ROOT_TASK_ID);
   }
 
   /**
    * Get all descendants of a task
+   * Uses efficient DB-level range query on path arrays
+   * Following the CouchDB hierarchical data pattern with startkey/endkey
    */
   getDescendants(
     ancestorId: TaskId
+  ): Effect.Effect<ReadonlyArray<Task>, NotFoundError | DbError> {
+    return Effect.flatMap(this.getById(ancestorId), (ancestor) =>
+      this.getDescendantsByPathPrefix(ancestor.path)
+    );
+  }
+
+  /**
+   * Get descendants by path prefix (internal helper for efficient queries)
+   * Uses startkey/endkey range on path arrays to query at DB level
+   */
+  private getDescendantsByPathPrefix(
+    path: ReadonlyArray<TaskId>
   ): Effect.Effect<ReadonlyArray<Task>, DbError> {
-    return this.getAll().pipe(
-      Effect.map((allTasks) =>
-        allTasks.filter(
-          (task) => task.path.includes(ancestorId) && task.id !== ancestorId
-        )
+    // Range query pattern from CouchDB hierarchical data blog post:
+    // startkey = path + [null] excludes the exact ancestor
+    // endkey = path + [{}] is upper bound for any deeper path
+    const startkey = [...path, null as any];
+    const endkey = [...path, {} as any];
+
+    return this.ensureViews().pipe(
+      Effect.flatMap(() =>
+        Effect.tryPromise({
+          try: () =>
+            this.db.query("tasks/by_full_path", {
+              startkey,
+              endkey,
+              include_docs: true,
+            }),
+          catch: (error) => DbError.make(error, "getDescendantsByPathPrefix"),
+        })
+      ),
+      Effect.map((result) =>
+        result.rows
+          .filter((row: any) => row.doc && row.doc.type === "task")
+          .map((row: any) => fromLegacy(row.doc as LegacyTask))
       )
     );
   }
@@ -255,33 +368,6 @@ export class PouchDBTaskRepository implements TaskRepository {
     });
   }
 
-  /**
-   * Private: Ensure root task exists
-   */
-  private ensureRootExists(): Effect.Effect<void, DbError> {
-    return this.exists(ROOT_TASK_ID).pipe(
-      Effect.flatMap((exists) => {
-        if (exists) {
-          return Effect.void;
-        }
-
-        const rootTask: LegacyTask = {
-          _id: ROOT_TASK_ID,
-          type: "task",
-          text: "root",
-          internalState: "not_started",
-          id: ROOT_TASK_ID,
-          path: [ROOT_TASK_ID],
-          changeLog: [],
-        };
-
-        return Effect.tryPromise({
-          try: () => this.db.put(rootTask),
-          catch: (error) => DbError.make(error, "ensureRootExists"),
-        }).pipe(Effect.asVoid);
-      })
-    );
-  }
 }
 
 /**
