@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/react';
 import PouchDB from 'pouchdb';
-import useTaskHooks from '../../tasks/hooks/useTaskHooks';
+import { useTaskOperations } from '../../tasks/hooks/useTaskOperations';
 import { Task, ROOT_ID } from '../../tasks/domain/Task';
 
 interface DatabaseDiagnosticsProps {
@@ -52,7 +52,7 @@ const statLabelStyle = css`
 `;
 
 export const DatabaseDiagnostics: React.FC<DatabaseDiagnosticsProps> = ({ db }) => {
-  const { getRootTasks, createTask } = useTaskHooks();
+  const { getRootTasks, createTask } = useTaskOperations();
   const [dbInfo, setDbInfo] = useState<{ adapter?: string; doc_count?: number } | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [checkingDb, setCheckingDb] = useState(false);

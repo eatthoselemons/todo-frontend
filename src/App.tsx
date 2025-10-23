@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
-import useTaskHooks from "./features/tasks/hooks/useTaskHooks";
+import { useTaskOperations } from "./features/tasks/hooks/useTaskOperations";
 import { useTaskContext } from "./features/tasks/context/TaskContext";
 import TreeView from "./components/tasks/TreeView";
 import TodayUpcoming from "./components/tasks/TodayUpcoming";
@@ -30,7 +30,7 @@ const App: React.FC = () => {
   const [showLiquidProgress, setShowLiquidProgress] = useState(false);
   const [liquidProgressValue, setLiquidProgressValue] = useState(0);
   const [liquidProgressLabel, setLiquidProgressLabel] = useState("");
-  const { getRootTaskIds, getTaskById, updateTask } = useTaskHooks();
+  const { getRootTaskIds, getTask, updateTask } = useTaskOperations();
   const { db } = useTaskContext();
   const { settings, progress } = useRewardsContext();
 
@@ -117,7 +117,7 @@ const App: React.FC = () => {
       const doneTasks: TaskID[] = [];
 
       for (const taskId of allTaskIds) {
-        const task = await getTaskById(taskId);
+        const task = await getTask(taskId);
         if (task) {
           if (task.internalState === BaseState.DONE) {
             doneTasks.push(taskId);
@@ -132,7 +132,7 @@ const App: React.FC = () => {
     };
 
     loadAndSeparateTasks();
-  }, [getRootTaskIds, getTaskById]);
+  }, [getRootTaskIds, getTask]);
 
   useEffect(() => {
     const changes = db
@@ -146,7 +146,7 @@ const App: React.FC = () => {
         const doneTasks: TaskID[] = [];
 
         for (const taskId of allTaskIds) {
-          const task = await getTaskById(taskId);
+          const task = await getTask(taskId);
           if (task) {
             if (task.internalState === BaseState.DONE) {
               doneTasks.push(taskId);
@@ -161,7 +161,7 @@ const App: React.FC = () => {
       });
 
     return () => changes.cancel();
-  }, [db, getRootTaskIds, getTaskById]);
+  }, [db, getRootTaskIds, getTask]);
 
   return (
     <div className="page">

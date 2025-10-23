@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Task, TaskID } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
 
 interface AddTaskModalProps {
   showAddModal: boolean;
@@ -19,7 +19,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [hasTaskNameError, setHasTaskNameError] = useState(false);
   const [taskNameError, setTaskNameError] = useState<string | undefined>();
 
-  const { createTask } = useTaskHooks();
+  const { createTask } = useTaskOperations();
 
   const close = () => {
     onClose?.();
