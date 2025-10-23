@@ -1,15 +1,20 @@
-import { useCallback } from 'react';
-import { Task, TaskID } from '../domain/Task';
-import useTaskHooks from './useTaskHooks';
-import {
-  exportTaskToYaml,
-  importTaskFromYaml,
-  YamlParseResult,
-} from '../../../utils/yamlConverter';
+/**
+ * Hook for exporting and importing tasks to/from YAML
+ * Uses new Effect-based YAML converter with legacy task adapter
+ */
+
+import { useCallback } from "react";
+import { Task as OldTask, type TaskID } from "../../../domain/Task";
+import { useLegacyTaskOperations } from "../compat/useLegacyTaskOperations";
+import { exportTaskToYaml, importTaskFromYaml } from "../yaml/YamlConverter";
+import { newToOldTask, oldToNewTask } from "../compat/LegacyTaskAdapter";
+import { YamlChildToCreate } from "../yaml/YamlSchema";
+import { Effect } from "effect";
+import { Task as NewTask } from "../domain/TaskEntity";
 
 export interface UseYamlExportReturn {
-  exportTask: (task: Task) => Promise<string>;
-  importTask: (task: Task, yamlString: string) => Promise<void>;
+  exportTask: (task: OldTask) => Promise<string>;
+  importTask: (task: OldTask, yamlString: string) => Promise<void>;
 }
 
 /**
@@ -17,33 +22,37 @@ export interface UseYamlExportReturn {
  */
 export function useYamlExport(): UseYamlExportReturn {
   const { getImmediateChildren, updateTask, createTask, deleteTask } =
-    useTaskHooks();
+    useLegacyTaskOperations();
 
   /**
    * Export a task and its entire subtree to YAML
    */
   const exportTask = useCallback(
-    async (task: Task): Promise<string> => {
+    async (task: OldTask): Promise<string> => {
+      // Convert to new task type
+      const newTask = oldToNewTask(task);
+
       // Build a map of all children recursively
-      const childrenMap = new Map<TaskID, Task[]>();
+      const childrenMap = new Map<string, NewTask[]>();
 
       // Recursive function to fetch all descendants
-      const fetchChildren = async (parentTask: Task): Promise<void> => {
-        // Build a map of all children recursively
-        const children = await getImmediateChildren(parentTask.id);
-        if (children.length > 0) {
-          childrenMap.set(parentTask.id, children);
+      const fetchChildren = async (parentTask: NewTask): Promise<void> => {
+        const children = await getImmediateChildren(parentTask.id as TaskID);
+        const newChildren = children.map(oldToNewTask);
+
+        if (newChildren.length > 0) {
+          childrenMap.set(parentTask.id, newChildren);
 
           // Recursively fetch grandchildren
-          for (const child of children) {
+          for (const child of newChildren) {
             await fetchChildren(child);
           }
         }
       };
 
-      await fetchChildren(task);
+      await fetchChildren(newTask);
 
-      return exportTaskToYaml(task, childrenMap);
+      return exportTaskToYaml(newTask, childrenMap as any);
     },
     [getImmediateChildren]
   );
@@ -52,44 +61,77 @@ export function useYamlExport(): UseYamlExportReturn {
    * Import YAML and update the task and its subtree
    */
   const importTask = useCallback(
-    async (task: Task, yamlString: string): Promise<void> => {
+    async (task: OldTask, yamlString: string): Promise<void> => {
+      // Convert to new task type
+      const newTask = oldToNewTask(task);
+
       // Get existing children
       const existingChildren = await getImmediateChildren(task.id);
+      const newChildren = existingChildren.map(oldToNewTask);
       const existingChildrenMap = new Map(
-        existingChildren.map((child) => [child.id, child])
+        newChildren.map((child) => [child.id, child])
       );
 
-      // Parse the YAML
-      const parseResult = importTaskFromYaml(
+      // Parse the YAML using Effect
+      const parseEffect = importTaskFromYaml(
         yamlString,
-        task,
+        newTask,
         existingChildrenMap
       );
 
+      // Run the Effect and handle errors
+      const parseResult = await Effect.runPromise(
+        parseEffect.pipe(
+          Effect.mapError((error) => {
+            throw new Error(error.message);
+          })
+        )
+      );
+
       // Update the root task
-      if (Object.keys(parseResult.updatedTask).length > 0) {
-        const updatedTaskObj = Object.assign(task, parseResult.updatedTask);
-        await updateTask(updatedTaskObj);
+      if (parseResult.updatedTask.text) {
+        const updatedOldTask = OldTask.from({
+          ...task,
+          text: parseResult.updatedTask.text,
+          internalState: parseResult.updatedTask.state
+            ? mapStateToLegacy(parseResult.updatedTask.state)
+            : task.internalState,
+          dueDate: parseResult.updatedTask.dueDate,
+        });
+        await updateTask(updatedOldTask);
       }
 
       // Delete children that are no longer in the YAML
       for (const childId of parseResult.childrenToDelete) {
-        await deleteTask(childId);
+        await deleteTask(childId as TaskID);
       }
 
       // Update existing children
       for (const childUpdate of parseResult.childrenToUpdate) {
-        const existingChild = existingChildrenMap.get(childUpdate.id);
+        const existingChild = existingChildren.find(
+          (c) => c.id === childUpdate.id
+        );
         if (existingChild) {
-          const updatedChild = Object.assign(existingChild, childUpdate.updates);
+          const updatedChild = OldTask.from({
+            ...existingChild,
+            text: childUpdate.updates.text,
+            internalState: childUpdate.updates.state
+              ? mapStateToLegacy(childUpdate.updates.state)
+              : existingChild.internalState,
+            dueDate: childUpdate.updates.dueDate,
+          });
           await updateTask(updatedChild);
 
-          // Handle nested children updates/creates
+          // Handle nested children
           if (childUpdate.children) {
-            await createNestedChildren(
-              updatedChild,
-              childUpdate.children
-            );
+            const updatedOldChild = await getImmediateChildren(
+              childUpdate.id as TaskID
+            ).then((children) => children.find((c) => c.id === childUpdate.id));
+            if (updatedOldChild) {
+              for (const childData of childUpdate.children) {
+                await createNestedTask(updatedOldChild, childData);
+              }
+            }
           }
         }
       }
@@ -106,71 +148,56 @@ export function useYamlExport(): UseYamlExportReturn {
    * Recursively create a task and its children
    */
   const createNestedTask = useCallback(
-    async (
-      parent: Task,
-      taskData: YamlParseResult['childrenToCreate'][0]
-    ): Promise<void> => {
+    async (parent: OldTask, taskData: YamlChildToCreate): Promise<void> => {
       // Create the task
-      const newTask = new Task(
-        taskData.task.text || '',
-        taskData.task.internalState,
-        undefined, // Let it generate its own ID
-        [], // Path will be set by createTask
+      const { BaseState } = require("../../../domain/Task");
+      const newTask = new OldTask(
+        taskData.text,
+        taskData.state ? mapStateToLegacy(taskData.state) : BaseState.NOT_STARTED,
+        undefined,
         [],
-        taskData.task.dueDate
+        [],
+        taskData.dueDate
       );
+      const newTaskId = await createTask(newTask, parent.id);
 
-      await createTask(newTask, parent.id);
+      // Get the created task to pass to children
+      const createdTasks = await getImmediateChildren(parent.id);
+      const createdTask = createdTasks.find((t) => t.id === newTaskId);
 
       // Create children recursively
-      if (taskData.children && taskData.children.length > 0) {
+      if (createdTask && taskData.children && taskData.children.length > 0) {
         for (const childData of taskData.children) {
-          await createNestedTask(newTask, childData);
+          await createNestedTask(createdTask, childData);
         }
       }
     },
-    [createTask]
-  );
-
-  /**
-   * Create nested children for an existing task (used when updating)
-   */
-  const createNestedChildren = useCallback(
-    async (
-      parent: Task,
-      childrenData: YamlParseResult['childrenToCreate']
-    ): Promise<void> => {
-      // First, get existing children to compare
-      const existingChildren = await getImmediateChildren(parent.id);
-      const existingChildrenByText = new Map(
-        existingChildren.map((child) => [child.text, child])
-      );
-
-      for (const childData of childrenData) {
-        const existingChild = existingChildrenByText.get(
-          childData.task.text || ''
-        );
-
-        if (existingChild) {
-          // Update existing child
-          const updatedChild = Object.assign(existingChild, childData.task);
-          await updateTask(updatedChild);
-
-          // Recursively handle grandchildren
-          if (childData.children && childData.children.length > 0) {
-            await createNestedChildren(updatedChild, childData.children);
-          }
-        } else {
-          // Create new child
-          await createNestedTask(parent, childData);
-        }
-      }
-    },
-    [getImmediateChildren, updateTask, createTask]
+    [createTask, getImmediateChildren]
   );
 
   return {
     exportTask,
     importTask,
   };
+}
+
+/**
+ * Map new TaskState to legacy BaseState
+ */
+function mapStateToLegacy(
+  state: NonNullable<YamlChildToCreate["state"]>
+): any {
+  const { BaseState } = require("../../../domain/Task");
+  switch (state._tag) {
+    case "NotStarted":
+      return BaseState.NOT_STARTED;
+    case "InProgress":
+      return BaseState.IN_PROGRESS;
+    case "Blocked":
+      return BaseState.BLOCKED;
+    case "Done":
+      return BaseState.DONE;
+    default:
+      return BaseState.NOT_STARTED;
+  }
 }
