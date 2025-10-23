@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
 import { Task, BaseState } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 import { AddTaskModal } from "./AddTaskModal";
 import { YamlModal } from "./YamlModal";
 import { SparkleAnimation } from "../effects/SparkleAnimation";
@@ -54,7 +54,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
-  const { updateTask, deleteTask } = useTaskOperations();
+  const { updateTask, deleteTask } = useLegacyTaskOperations();
   const { settings, emit, progress } = useRewardsContext();
 
   // Memoized computations

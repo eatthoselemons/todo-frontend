@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Task } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -12,7 +12,7 @@ interface DayStats {
 
 const History: React.FC = () => {
   const [weekStats, setWeekStats] = useState<DayStats[]>([]);
-  const { getAllTasks } = useTaskOperations();
+  const { getAllTasks } = useLegacyTaskOperations();
 
   useEffect(() => {
     const loadHistory = async () => {

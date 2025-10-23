@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { css } from "@emotion/react";
 import { TaskID } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 
 interface MenuModalProps {
   showMenuModal: boolean;
@@ -80,7 +80,7 @@ export const MenuModal: React.FC<MenuModalProps> = ({
   taskId,
   onClose,
 }) => {
-  const { clearSubtasks } = useTaskOperations();
+  const { clearSubtasks } = useLegacyTaskOperations();
   const [error, setError] = useState<string | null>(null);
 
   const close = () => {

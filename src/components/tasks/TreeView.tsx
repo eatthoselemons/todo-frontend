@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { css } from "@emotion/react";
 import TreeNode from "./TreeNode";
 import { Task, TaskID } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 
 interface TreeViewProps {
   rootTaskIds: TaskID[];
@@ -46,7 +46,7 @@ const TreeView: React.FC<TreeViewProps> = ({
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allTasksLoaded, setAllTasksLoaded] = useState(false);
-  const { getTask, getImmediateChildren } = useTaskOperations();
+  const { getTask, getImmediateChildren } = useLegacyTaskOperations();
 
   // Memoized toggle function with dynamic child loading for lazy mode
   const toggleExpand = useCallback(async (taskId: TaskID) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Task, TaskID } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -11,7 +11,7 @@ interface TaskWithPath {
 
 const TodayUpcoming: React.FC = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithPath[]>([]);
-  const { getAllTasks, getTask } = useTaskOperations();
+  const { getAllTasks, getTask } = useLegacyTaskOperations();
 
   useEffect(() => {
     const loadUpcomingTasks = async () => {

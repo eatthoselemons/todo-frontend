@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Task } from "../../domain/Task";
-import { useTaskOperations } from "../../features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
 
 const CompletedToday: React.FC = () => {
   const [startedToday, setStartedToday] = useState(0);
   const [finishedToday, setFinishedToday] = useState(0);
-  const { getAllTasks } = useTaskOperations();
+  const { getAllTasks } = useLegacyTaskOperations();
 
   useEffect(() => {
     const loadStats = async () => {

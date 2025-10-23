@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
-import { useTaskOperations } from "./features/tasks/hooks/useTaskOperations";
+import { useLegacyTaskOperations } from "./features/tasks/compat/useLegacyTaskOperations";
 import { useTaskContext } from "./features/tasks/context/TaskContext";
 import TreeView from "./components/tasks/TreeView";
 import TodayUpcoming from "./components/tasks/TodayUpcoming";
@@ -30,7 +30,7 @@ const App: React.FC = () => {
   const [showLiquidProgress, setShowLiquidProgress] = useState(false);
   const [liquidProgressValue, setLiquidProgressValue] = useState(0);
   const [liquidProgressLabel, setLiquidProgressLabel] = useState("");
-  const { getRootTaskIds, getTask, updateTask } = useTaskOperations();
+  const { getRootTaskIds, getTask, updateTask } = useLegacyTaskOperations();
   const { db } = useTaskContext();
   const { settings, progress } = useRewardsContext();
 
