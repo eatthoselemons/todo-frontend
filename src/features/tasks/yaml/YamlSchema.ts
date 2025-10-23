@@ -34,26 +34,20 @@ export interface YamlParseResult {
     state?: TaskState;
     dueDate?: string;
   };
-  childrenToCreate: Array<YamlChildToCreate>;
-  childrenToUpdate: Array<YamlChildToUpdate>;
+  childrenToCreate: Array<YamlChildOperation>;
+  childrenToUpdate: Array<YamlChildOperation>;
   childrenToDelete: string[];
 }
 
-export interface YamlChildToCreate {
+/**
+ * Unified type for child operations (create or update)
+ */
+export interface YamlChildOperation {
+  id?: string; // Present for updates, absent for creates
   text: string;
   state?: TaskState;
   dueDate?: string;
-  children?: YamlChildToCreate[];
-}
-
-export interface YamlChildToUpdate {
-  id: string;
-  updates: {
-    text: string;
-    state?: TaskState;
-    dueDate?: string;
-  };
-  children?: YamlChildToCreate[];
+  children?: YamlChildOperation[];
 }
 
 /**

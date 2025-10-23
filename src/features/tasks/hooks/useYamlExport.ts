@@ -8,7 +8,7 @@ import { Task as OldTask, type TaskID } from "../../../domain/Task";
 import { useLegacyTaskOperations } from "../compat/useLegacyTaskOperations";
 import { exportTaskToYaml, importTaskFromYaml } from "../yaml/YamlConverter";
 import { newToOldTask, oldToNewTask } from "../compat/LegacyTaskAdapter";
-import { YamlChildToCreate } from "../yaml/YamlSchema";
+import { YamlChildOperation } from "../yaml/YamlSchema";
 import { Effect } from "effect";
 import { Task as NewTask } from "../domain/TaskEntity";
 
@@ -79,12 +79,12 @@ export function useYamlExport(): UseYamlExportReturn {
         existingChildrenMap
       );
 
-      // Run the Effect and handle errors
+      // Run the Effect and handle errors (don't throw generic Error)
       const parseResult = await Effect.runPromise(
         parseEffect.pipe(
-          Effect.mapError((error) => {
-            throw new Error(error.message);
-          })
+          Effect.catchAll((error) =>
+            Effect.fail(new Error(`YAML ${error._tag}: ${error.message}`))
+          )
         )
       );
 
@@ -114,11 +114,11 @@ export function useYamlExport(): UseYamlExportReturn {
         if (existingChild) {
           const updatedChild = OldTask.from({
             ...existingChild,
-            text: childUpdate.updates.text,
-            internalState: childUpdate.updates.state
-              ? mapStateToLegacy(childUpdate.updates.state)
+            text: childUpdate.text,
+            internalState: childUpdate.state
+              ? mapStateToLegacy(childUpdate.state)
               : existingChild.internalState,
-            dueDate: childUpdate.updates.dueDate,
+            dueDate: childUpdate.dueDate,
           });
           await updateTask(updatedChild);
 
@@ -148,7 +148,7 @@ export function useYamlExport(): UseYamlExportReturn {
    * Recursively create a task and its children
    */
   const createNestedTask = useCallback(
-    async (parent: OldTask, taskData: YamlChildToCreate): Promise<void> => {
+    async (parent: OldTask, taskData: YamlChildOperation): Promise<void> => {
       // Create the task
       const { BaseState } = require("../../../domain/Task");
       const newTask = new OldTask(
@@ -185,7 +185,7 @@ export function useYamlExport(): UseYamlExportReturn {
  * Map new TaskState to legacy BaseState
  */
 function mapStateToLegacy(
-  state: NonNullable<YamlChildToCreate["state"]>
+  state: NonNullable<YamlChildOperation["state"]>
 ): any {
   const { BaseState } = require("../../../domain/Task");
   switch (state._tag) {

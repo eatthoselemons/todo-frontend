@@ -14,8 +14,7 @@ import {
   YamlParseResult,
   YamlParseError,
   YamlValidationError,
-  YamlChildToCreate,
-  YamlChildToUpdate,
+  YamlChildOperation,
 } from "./YamlSchema";
 
 /**
@@ -106,30 +105,24 @@ const parseYamlString = (
 
 /**
  * Validate YAML object against schema
+ * Uses custom tagged errors, no generic Error throws
  */
 const validateYamlTask = (
   data: unknown
-): Effect.Effect<YamlTask, YamlValidationError> =>
-  pipe(
-    Effect.try({
-      try: () => {
-        if (!data || typeof data !== "object") {
-          throw new Error("Invalid YAML: must be an object");
-        }
-        const task = data as any;
-        if (!task.text || typeof task.text !== "string") {
-          throw new Error("Invalid YAML: text field is required");
-        }
-        return task as YamlTask;
-      },
-      catch: (error) =>
-        new YamlValidationError(
-          error instanceof Error
-            ? error.message
-            : "Invalid YAML structure: must be a task object with text field"
-        ),
-    })
-  );
+): Effect.Effect<YamlTask, YamlValidationError> => {
+  if (!data || typeof data !== "object") {
+    return Effect.fail(new YamlValidationError("Invalid YAML: must be an object"));
+  }
+  
+  const task = data as any;
+  if (!task.text || typeof task.text !== "string") {
+    return Effect.fail(
+      new YamlValidationError("Invalid YAML: text field is required and must be a string")
+    );
+  }
+  
+  return Effect.succeed(task as YamlTask);
+};
 
 /**
  * Build parse result from validated YAML
@@ -169,12 +162,12 @@ const processYamlChildren = (
   yamlChildren: any[],
   existingChildrenMap: Map<TaskId, Task>
 ): {
-  toCreate: YamlChildToCreate[];
-  toUpdate: YamlChildToUpdate[];
+  toCreate: YamlChildOperation[];
+  toUpdate: YamlChildOperation[];
   toDelete: TaskId[];
 } => {
-  const toCreate: YamlChildToCreate[] = [];
-  const toUpdate: YamlChildToUpdate[] = [];
+  const toCreate: YamlChildOperation[] = [];
+  const toUpdate: YamlChildOperation[] = [];
   const matchedIds = new Set<TaskId>();
 
   // Match YAML children with existing by ID (preferred) or text (fallback)
@@ -197,20 +190,18 @@ const processYamlChildren = (
     }
 
     if (matchedChild) {
-      // Update existing child
+      // Update existing child (includes id)
       toUpdate.push({
         id: matchedChild.id,
-        updates: {
-          text: yamlChild.text,
-          state: yamlChild.state,
-          dueDate: yamlChild.dueDate,
-        },
+        text: yamlChild.text,
+        state: yamlChild.state,
+        dueDate: yamlChild.dueDate,
         children: yamlChild.children
           ? convertYamlChildrenToCreateFormat(yamlChild.children)
           : undefined,
       });
     } else {
-      // Create new child
+      // Create new child (no id)
       toCreate.push({
         text: yamlChild.text,
         state: yamlChild.state,
@@ -231,12 +222,12 @@ const processYamlChildren = (
 };
 
 /**
- * Recursively convert YAML children to create format
+ * Recursively convert YAML children to operation format
  * Pure calculation
  */
 const convertYamlChildrenToCreateFormat = (
   yamlChildren: any[]
-): YamlChildToCreate[] => {
+): YamlChildOperation[] => {
   return yamlChildren.map((child) => ({
     text: child.text,
     state: child.state,
