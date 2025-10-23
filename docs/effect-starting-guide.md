@@ -8,14 +8,16 @@ This guide captures all the lessons learned and best practices from refactoring 
 ## Table of Contents
 
 1. [Core Principles](#core-principles)
-2. [Service Pattern](#service-pattern)
-3. [Repository Pattern](#repository-pattern)
-4. [Layer Architecture](#layer-architecture)
-5. [React Integration](#react-integration)
-6. [Domain Modeling](#domain-modeling)
-7. [Efficient Hierarchical Data](#efficient-hierarchical-data)
-8. [Common Pitfalls](#common-pitfalls)
-9. [Testing Strategy](#testing-strategy)
+2. [Tagged Error Handling](#tagged-error-handling)
+3. [pipe vs Effect.gen](#pipe-vs-effectgen)
+4. [Service Pattern](#service-pattern)
+5. [Repository Pattern](#repository-pattern)
+6. [Layer Architecture](#layer-architecture)
+7. [React Integration](#react-integration)
+8. [Domain Modeling](#domain-modeling)
+9. [Efficient Hierarchical Data](#efficient-hierarchical-data)
+10. [Common Pitfalls](#common-pitfalls)
+11. [Testing Strategy](#testing-strategy)
 
 ---
 
@@ -121,6 +123,254 @@ export const makeTaskText = Schema.decodeUnknownSync(TaskTextSchema);
 
 // 4. Optional: unsafe constructor for constants
 export const unsafeTaskText = (v: string) => v as TaskText;
+```
+
+---
+
+## Tagged Error Handling
+
+### ❌ DON'T: Throw generic errors
+
+Never use generic `Error` or `throw` statements in Effect code.
+
+```typescript
+// ❌ BAD - Generic Error loses type information
+const validateTask = (data: unknown): Effect.Effect<Task, Error> => {
+  return Effect.try({
+    try: () => {
+      if (!data) {
+        throw new Error("Invalid data");  // ❌ Generic error
+      }
+      return data as Task;
+    },
+    catch: (e) => new Error(String(e))  // ❌ Loses error context
+  });
+};
+```
+
+### ✅ DO: Use tagged error classes
+
+Always create tagged error classes with discriminated `_tag` property.
+
+```typescript
+// ✅ GOOD - Tagged errors with _tag for pattern matching
+export class ValidationError {
+  readonly _tag = "ValidationError";  // ✅ Required for Effect.catchTag
+  constructor(readonly message: string) {}
+}
+
+export class NotFoundError {
+  readonly _tag = "NotFoundError";
+  constructor(readonly id: string) {}
+}
+
+export class DbError {
+  readonly _tag = "DbError";
+  constructor(readonly cause: unknown, readonly operation?: string) {}
+}
+
+// Use Effect.fail instead of throw
+const validateTask = (data: unknown): Effect.Effect<Task, ValidationError> => {
+  if (!data || typeof data !== "object") {
+    return Effect.fail(new ValidationError("Data must be an object"));  // ✅
+  }
+  
+  const task = data as any;
+  if (!task.text) {
+    return Effect.fail(new ValidationError("Missing required field: text"));  // ✅
+  }
+  
+  return Effect.succeed(task as Task);
+};
+```
+
+### Why Tagged Errors?
+
+1. **Type-safe error handling**: Function signatures show exactly what can fail
+2. **Pattern matching**: Use `Effect.catchTag` to handle specific errors
+3. **Better debugging**: Error `_tag` shows up in stack traces
+4. **Self-documenting**: Compiler enforces handling all error cases
+5. **Composable**: Errors compose through Effect chains
+
+### Pattern Matching on Errors
+
+```typescript
+const program = pipe(
+  loadTask(id),
+  // Catch specific error types by tag
+  Effect.catchTag("NotFoundError", (error) => 
+    Effect.succeed(createDefaultTask(error.id))
+  ),
+  Effect.catchTag("ValidationError", (error) => 
+    Effect.fail(new BadRequestError(error.message))
+  ),
+  // Catch all remaining errors
+  Effect.catchAll((error) => 
+    Effect.fail(new UnknownError(String(error)))
+  )
+);
+```
+
+### Effect.fail vs throw
+
+```typescript
+// ❌ NEVER use throw
+const bad = () => {
+  if (condition) {
+    throw new Error("Bad!");  // ❌ Not type-safe
+  }
+};
+
+// ✅ ALWAYS use Effect.fail
+const good = () => {
+  if (condition) {
+    return Effect.fail(new ValidationError("Good!"));  // ✅ Type-safe
+  }
+  return Effect.succeed(result);
+};
+```
+
+---
+
+## pipe vs Effect.gen
+
+### DEFAULT: Always use pipe
+
+**Golden Rule: Use `pipe` everywhere by default. Only use `Effect.gen` when pipe would create nested pipes.**
+
+### ✅ Use pipe for linear chains
+
+```typescript
+// ✅ GOOD - Linear transformation chain
+const updateTaskText = (id: TaskId, newText: string) =>
+  pipe(
+    repo.getById(id),
+    Effect.flatMap((task) => updateText(task, newText)),
+    Effect.tap((updated) => repo.save(updated))
+  );
+```
+
+### ✅ Use pipe even with conditionals
+
+```typescript
+// ✅ GOOD - Simple conditional with ternary
+const completeTask = (id: TaskId) =>
+  pipe(
+    repo.getById(id),
+    Effect.flatMap((task) =>
+      task.state._tag === "Done"
+        ? Effect.succeed(task)  // Already done
+        : pipe(
+            transitionState(task, Done),
+            Effect.tap((updated) => repo.save(updated))
+          )
+    )
+  );
+```
+
+### ❌ Bad: Nested pipes become unreadable
+
+```typescript
+// ❌ BAD - Too many nested pipes (hard to read)
+const complexOperation = (id: TaskId) =>
+  pipe(
+    repo.getById(id),
+    Effect.flatMap((task) =>
+      pipe(
+        repo.getParent(task.parentId),
+        Effect.flatMap((parent) =>
+          pipe(
+            repo.getChildren(task.id),
+            Effect.flatMap((children) =>
+              pipe(
+                validateHierarchy(parent, task, children),
+                Effect.flatMap((valid) =>
+                  valid
+                    ? pipe(
+                        updateTask(task),
+                        Effect.flatMap(() => notifyParent(parent))
+                      )
+                    : Effect.fail(new ValidationError("Invalid"))
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ); // 😱 Pyramid of doom!
+```
+
+### ✅ EXCEPTION: Use Effect.gen to flatten nested pipes
+
+```typescript
+// ✅ GOOD - Effect.gen flattens complex nested operations
+const complexOperation = (id: TaskId) =>
+  Effect.gen(function* () {
+    // Sequential operations with yield*
+    const task = yield* repo.getById(id);
+    const parent = yield* repo.getParent(task.parentId);
+    const children = yield* repo.getChildren(task.id);
+    
+    // Conditional logic is clear
+    const valid = yield* validateHierarchy(parent, task, children);
+    if (!valid) {
+      return yield* Effect.fail(new ValidationError("Invalid hierarchy"));
+    }
+    
+    // More sequential operations
+    yield* updateTask(task);
+    yield* notifyParent(parent);
+    
+    return task;
+  });
+```
+
+### Don't forget yield*!
+
+```typescript
+// ❌ BAD - Missing yield*
+Effect.gen(function* () {
+  const task = repo.getById(id);  // ❌ Returns Effect<Task>, not Task!
+  console.log(task.text);  // ❌ Runtime error - task.text doesn't exist
+});
+
+// ✅ GOOD - Always use yield*
+Effect.gen(function* () {
+  const task = yield* repo.getById(id);  // ✅ Unwraps to Task
+  console.log(task.text);  // ✅ Works perfectly
+});
+```
+
+### When to use each
+
+| Situation | Use | Example |
+|-----------|-----|---------|
+| Linear chain (A → B → C) | `pipe` | `pipe(getTask, updateTask, saveTask)` |
+| Simple conditional (1-2 branches) | `pipe` with ternary | `task.done ? succeed : update` |
+| Multiple nested flatMaps (3+) | `Effect.gen` | See complex example above |
+| Loops over effects | `Effect.gen` | `for (const x of arr) yield* process(x)` |
+| Early returns | `Effect.gen` | `if (invalid) return yield* fail(...)` |
+
+### Effect.gen is OK in Layer.effect
+
+```typescript
+// ✅ OK - Effect.gen in Layer.effect is the one place it's encouraged
+export const TaskServiceLive = Layer.effect(
+  TaskService,
+  Effect.gen(function* () {
+    const repo = yield* TaskRepository;  // Get dependency
+    
+    // Define methods using pipe
+    const getTask = (id: TaskId) =>
+      pipe(
+        repo.getById(id),
+        Effect.map(transform)
+      );
+    
+    return { getTask } as const;
+  })
+);
 ```
 
 ---
