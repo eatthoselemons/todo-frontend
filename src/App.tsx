@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { TaskID, BaseState, Task, ROOT_ID } from "./domain/Task";
-import { useLegacyTaskOperations } from "./features/tasks/compat/useLegacyTaskOperations";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { Task, TaskId, TaskState, ROOT_TASK_ID } from "./features/tasks/domain";
+import { useTaskQueries, useTaskCommands } from "./features/tasks/hooks";
 import { useTaskContext } from "./features/tasks/context/TaskContext";
 import TreeView from "./components/tasks/TreeView";
 import TodayUpcoming from "./components/tasks/TodayUpcoming";
@@ -17,8 +17,8 @@ import AdvancedThreeEffectsHost from "./features/rewards/components/AdvancedThre
 import "./styles/app.css";
 
 const App: React.FC = () => {
-  const [taskIds, setTaskIds] = useState<TaskID[]>([]);
-  const [doneTaskIds, setDoneTaskIds] = useState<TaskID[]>([]);
+  const [taskIds, setTaskIds] = useState<TaskId[]>([]);
+  const [doneTaskIds, setDoneTaskIds] = useState<TaskId[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
   const [filterText, setFilterText] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -26,11 +26,13 @@ const App: React.FC = () => {
   const [expandAllTrigger, setExpandAllTrigger] = useState(0);
   const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
   const [expandToLevelTrigger, setExpandToLevelTrigger] = useState<{level: number, trigger: number} | null>(null);
-  const [pendingCompletions, setPendingCompletions] = useState<Array<{id: string; task: Task; message: string}>>([]);
+  const [stateOverrides, setStateOverrides] = useState<Map<TaskId, TaskState>>(new Map());
+  const [pendingCompletions, setPendingCompletions] = useState<Array<{id: string; taskId: TaskId; from: TaskState; message: string}>>([]);
   const [showLiquidProgress, setShowLiquidProgress] = useState(false);
   const [liquidProgressValue, setLiquidProgressValue] = useState(0);
   const [liquidProgressLabel, setLiquidProgressLabel] = useState("");
-  const { getRootTaskIds, getTask, updateTask } = useLegacyTaskOperations();
+  const { getRootTaskIds, getTask } = useTaskQueries();
+  const { completeTask } = useTaskCommands();
   const { db } = useTaskContext();
   const { settings, progress } = useRewardsContext();
 
@@ -45,6 +47,11 @@ const App: React.FC = () => {
     setFilterText(e.target.value);
   }, []);
 
+  // Helper to get effective state with overrides
+  const getEffectiveState = useCallback((taskId: TaskId, task: Task): TaskState => {
+    return stateOverrides.get(taskId) ?? task.state;
+  }, [stateOverrides]);
+
   // Handle milestone animation
   const handleMilestone = useCallback((label: string, value: number) => {
     if (settings.enabled && settings.animations && settings.progression) {
@@ -54,41 +61,50 @@ const App: React.FC = () => {
     }
   }, [settings.enabled, settings.animations, settings.progression]);
 
-  // Handle task completion with grace period
+  // Handle task completion with grace period (optimistic)
   const handleTaskComplete = useCallback((task: Task) => {
-    // Add to pending completions
     const toastId = `toast-${Date.now()}-${task.id}`;
+    const doneState: TaskState = { _tag: "Done" };
+    
+    // Add optimistic override (no DB write)
+    setStateOverrides(prev => new Map(prev).set(task.id, doneState));
+    
+    // Track pending completion
     setPendingCompletions(prev => [...prev, {
       id: toastId,
-      task,
+      taskId: task.id,
+      from: task.state,
       message: `"${task.text}" moving to Done`
     }]);
   }, []);
 
-  // Handle undo from grace period
-  const handleUndo = useCallback((taskId: TaskID) => {
-    // Find the task and revert its state
-    const pending = pendingCompletions.find(p => p.task.id === taskId);
-    if (pending) {
-      // Revert the task state (it was cycled forward, so cycle 3 times to go back)
-      pending.task.nextState(); // DONE -> NOT_STARTED
-      pending.task.nextState(); // NOT_STARTED -> IN_PROGRESS
-      pending.task.nextState(); // IN_PROGRESS -> BLOCKED
-      updateTask(pending.task);
+  // Handle undo from grace period (remove override, no DB write)
+  const handleUndo = useCallback((taskId: TaskId) => {
+    // Remove state override to restore original state
+    setStateOverrides(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(taskId);
+      return newMap;
+    });
 
-      // Remove from pending
-      setPendingCompletions(prev => prev.filter(p => p.task.id !== taskId));
-    }
-  }, [pendingCompletions, updateTask]);
+    // Remove from pending
+    setPendingCompletions(prev => prev.filter(p => p.taskId !== taskId));
+  }, []);
 
-  // Handle grace period expiry
-  const handleExpire = useCallback(async (taskId: TaskID) => {
-    // Find the task and actually update it
-    const pending = pendingCompletions.find(p => p.task.id === taskId);
+  // Handle grace period expiry (commit to DB)
+  const handleExpire = useCallback(async (taskId: TaskId) => {
+    const pending = pendingCompletions.find(p => p.taskId === taskId);
     if (pending) {
-      await updateTask(pending.task);
-      // Remove from pending
-      setPendingCompletions(prev => prev.filter(p => p.task.id !== taskId));
+      // Call completeTask service to write to DB
+      await completeTask(taskId);
+      
+      // Clear pending and override
+      setPendingCompletions(prev => prev.filter(p => p.taskId !== taskId));
+      setStateOverrides(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(taskId);
+        return newMap;
+      });
 
       // Check for milestone progress (every 5 tasks or at level boundaries)
       if (settings.enabled && settings.animations && settings.progression) {
@@ -108,18 +124,19 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [pendingCompletions, updateTask, settings.enabled, settings.animations, settings.progression, progress]);
+  }, [pendingCompletions, completeTask, settings.enabled, settings.animations, settings.progression, progress]);
 
   useEffect(() => {
     const loadAndSeparateTasks = async () => {
       const allTaskIds = await getRootTaskIds();
-      const activeTasks: TaskID[] = [];
-      const doneTasks: TaskID[] = [];
+      const activeTasks: TaskId[] = [];
+      const doneTasks: TaskId[] = [];
 
       for (const taskId of allTaskIds) {
         const task = await getTask(taskId);
         if (task) {
-          if (task.internalState === BaseState.DONE) {
+          const effectiveState = getEffectiveState(taskId, task);
+          if (effectiveState._tag === "Done") {
             doneTasks.push(taskId);
           } else {
             activeTasks.push(taskId);
@@ -132,7 +149,7 @@ const App: React.FC = () => {
     };
 
     loadAndSeparateTasks();
-  }, [getRootTaskIds, getTask]);
+  }, [getRootTaskIds, getTask, getEffectiveState]);
 
   useEffect(() => {
     const changes = db
@@ -142,13 +159,14 @@ const App: React.FC = () => {
       })
       .on("change", async () => {
         const allTaskIds = await getRootTaskIds();
-        const activeTasks: TaskID[] = [];
-        const doneTasks: TaskID[] = [];
+        const activeTasks: TaskId[] = [];
+        const doneTasks: TaskId[] = [];
 
         for (const taskId of allTaskIds) {
           const task = await getTask(taskId);
           if (task) {
-            if (task.internalState === BaseState.DONE) {
+            const effectiveState = getEffectiveState(taskId, task);
+            if (effectiveState._tag === "Done") {
               doneTasks.push(taskId);
             } else {
               activeTasks.push(taskId);
@@ -161,7 +179,7 @@ const App: React.FC = () => {
       });
 
     return () => changes.cancel();
-  }, [db, getRootTaskIds, getTask]);
+  }, [db, getRootTaskIds, getTask, getEffectiveState]);
 
   return (
     <div className="page">
@@ -229,7 +247,7 @@ const App: React.FC = () => {
             collapseAllTrigger={collapseAllTrigger}
             expandToLevelTrigger={expandToLevelTrigger}
             loadStrategy={activeTab === 'active' ? 'full' : 'lazy'}
-            onTaskComplete={activeTab === 'active' ? handleTaskComplete : undefined}
+            onTaskComplete={activeTab === 'active' ? (handleTaskComplete as any) : undefined}
             onMilestone={handleMilestone}
           />
         </div>
@@ -242,7 +260,7 @@ const App: React.FC = () => {
       </div>
 
       <AddTaskModal
-        parentTaskId={ROOT_ID}
+        parentTaskId={ROOT_TASK_ID}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />

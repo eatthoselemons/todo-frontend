@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Task, TaskID } from "../../domain/Task";
-import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
+import { Task, TaskId } from "../../features/tasks/domain";
+import { useTaskQueries } from "../../features/tasks/hooks/useTaskQueries";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -11,7 +11,7 @@ interface TaskWithPath {
 
 const TodayUpcoming: React.FC = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithPath[]>([]);
-  const { getAllTasks, getTask } = useLegacyTaskOperations();
+  const { getAllTasks, getTask } = useTaskQueries();
 
   useEffect(() => {
     const loadUpcomingTasks = async () => {
@@ -40,7 +40,7 @@ const TodayUpcoming: React.FC = () => {
     };
 
     loadUpcomingTasks();
-  }, []);
+  }, [getAllTasks, getTask]);
 
   const buildBreadcrumbs = async (task: Task): Promise<string> => {
     if (!task.path || task.path.length === 0) return "";

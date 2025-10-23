@@ -4,19 +4,24 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import TreeNode from '../tasks/TreeNode';
-import { Task, BaseState } from '../../features/tasks/domain/Task';
+import { Task, NotStarted, InProgress, Blocked, Done } from '../../features/tasks/domain';
 
 // Create mocks before jest.mock calls
 const mockEmit = jest.fn().mockResolvedValue(undefined);
 const mockOn = jest.fn(() => jest.fn());
-const mockUpdateTask = jest.fn().mockResolvedValue(undefined);
+const mockTransitionTaskState = jest.fn();
 const mockDeleteTask = jest.fn().mockResolvedValue(undefined);
 
 // Mock hooks
-jest.mock('../../features/tasks/hooks/useTaskHooks', () => ({
+jest.mock('../../features/tasks/hooks/useTaskQueries', () => ({
   __esModule: true,
-  default: jest.fn(() => ({
-    updateTask: mockUpdateTask,
+  useTaskQueries: jest.fn(() => ({})),
+}));
+
+jest.mock('../../features/tasks/hooks/useTaskCommands', () => ({
+  __esModule: true,
+  useTaskCommands: jest.fn(() => ({
+    transitionTaskState: mockTransitionTaskState,
     deleteTask: mockDeleteTask,
   })),
 }));
@@ -35,29 +40,32 @@ jest.mock('../../features/rewards/context/RewardsContext', () => ({
 describe('TreeNode - Branch Complete Event', () => {
   beforeEach(() => {
     mockEmit.mockClear();
-    mockUpdateTask.mockClear();
+    mockTransitionTaskState.mockClear();
+    
+    // Set up mock to return updated task with new state
+    mockTransitionTaskState.mockImplementation((id, newState) => {
+      return Promise.resolve({
+        id,
+        text: 'Mock Task' as any,
+        state: newState,
+        path: [] as any,
+        history: [],
+        createdAt: Date.now() as any,
+        updatedAt: Date.now() as any,
+      });
+    });
   });
 
-  const createMockTask = (id: string, text: string, state: BaseState = BaseState.NOT_STARTED): Task => {
-    const task = {
-      id,
-      text,
-      internalState: state,
-      dueDate: null,
-      children: [],
-      nextState: jest.fn(function(this: Task) {
-        // Cycle through states
-        if (this.internalState === BaseState.NOT_STARTED) {
-          this.internalState = BaseState.IN_PROGRESS;
-        } else if (this.internalState === BaseState.IN_PROGRESS) {
-          this.internalState = BaseState.BLOCKED;
-        } else if (this.internalState === BaseState.BLOCKED) {
-          this.internalState = BaseState.DONE;
-        } else {
-          this.internalState = BaseState.NOT_STARTED;
-        }
-      }),
-    } as any;
+  const createMockTask = (id: string, text: string, state = NotStarted): Task => {
+    const task: Task = {
+      id: id as any,
+      text: text as any,
+      state,
+      path: [] as any,
+      history: [],
+      createdAt: Date.now() as any,
+      updatedAt: Date.now() as any,
+    };
     return task;
   };
 

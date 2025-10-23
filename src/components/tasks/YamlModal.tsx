@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Task } from "../../domain/Task";
+import { Task } from "../../features/tasks/domain";
 import { useYamlExport } from "../../features/tasks/hooks/useYamlExport";
 import { YamlEditor, YamlEditorRef } from "../editor/YamlEditor";
+import { newToOldTask } from "../../features/tasks/compat/LegacyTaskAdapter";
 
 interface YamlModalProps {
   showModal: boolean;
@@ -33,7 +34,7 @@ export const YamlModal: React.FC<YamlModalProps> = ({
       setSuccessMessage(undefined);
       loadedTaskIdRef.current = task.id;
 
-      exportTask(task)
+      exportTask(newToOldTask(task))
         .then((yaml) => {
           setYamlContent(yaml);
           setIsLoading(false);
@@ -63,7 +64,7 @@ export const YamlModal: React.FC<YamlModalProps> = ({
     try {
       // Get current value from editor
       const currentYaml = editorRef.current?.getValue() || '';
-      await importTask(task, currentYaml);
+      await importTask(newToOldTask(task), currentYaml);
       setSuccessMessage("Task updated successfully!");
       setIsSaving(false);
 

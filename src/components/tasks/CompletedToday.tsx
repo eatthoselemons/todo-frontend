@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Task } from "../../domain/Task";
-import { useLegacyTaskOperations } from "../../features/tasks/compat/useLegacyTaskOperations";
+import { Task } from "../../features/tasks/domain/TaskEntity";
+import { useTaskQueries } from "../../features/tasks/hooks/useTaskQueries";
 
 const CompletedToday: React.FC = () => {
   const [startedToday, setStartedToday] = useState(0);
   const [finishedToday, setFinishedToday] = useState(0);
-  const { getAllTasks } = useLegacyTaskOperations();
+  const { getAllTasks } = useTaskQueries();
 
   useEffect(() => {
     const loadStats = async () => {
@@ -18,15 +18,16 @@ const CompletedToday: React.FC = () => {
       let finished = 0;
 
       allTasks.forEach((task) => {
-        if (task.changeLog && task.changeLog.length > 0) {
-          task.changeLog.forEach((change) => {
-            const changeDate = new Date(change.time);
+        if (task.history && task.history.length > 0) {
+          task.history.forEach((change) => {
+            const changeDate = new Date(change.timestamp);
             changeDate.setHours(0, 0, 0, 0);
 
             if (changeDate.getTime() === todayTime) {
-              if (change.newState === "in_progress") {
+              // Check discriminated union state
+              if (change.newState._tag === "InProgress") {
                 started++;
-              } else if (change.newState === "done") {
+              } else if (change.newState._tag === "Done") {
                 finished++;
               }
             }
@@ -39,7 +40,7 @@ const CompletedToday: React.FC = () => {
     };
 
     loadStats();
-  }, []);
+  }, [getAllTasks]);
 
   return (
     <div className="card" style={{ marginTop: "12px" }}>
