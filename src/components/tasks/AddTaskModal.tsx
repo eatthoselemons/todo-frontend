@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Task, TaskID } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { TaskId } from "../../features/tasks/domain/ValueObjects";
+import { useTaskCommands } from "../../features/tasks/hooks/useTaskCommands";
 
 interface AddTaskModalProps {
   showAddModal: boolean;
   setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
-  parentTaskId: TaskID;
+  parentTaskId: TaskId;
   onClose?: () => void;
 }
 
@@ -19,7 +19,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [hasTaskNameError, setHasTaskNameError] = useState(false);
   const [taskNameError, setTaskNameError] = useState<string | undefined>();
 
-  const { createTask } = useTaskHooks();
+  const { createTask } = useTaskCommands();
 
   const close = () => {
     onClose?.();
@@ -41,7 +41,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
     (async () => {
       try {
-        await createTask(new Task(newTaskName), parentTaskId);
+        await createTask({
+          text: newTaskName,
+          parentId: parentTaskId,
+        });
         setTaskName("");
         close();
       } catch (e: any) {

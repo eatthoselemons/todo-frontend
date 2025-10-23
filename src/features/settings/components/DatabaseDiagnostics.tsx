@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/react';
 import PouchDB from 'pouchdb';
-import useTaskHooks from '../../tasks/hooks/useTaskHooks';
-import { Task, ROOT_ID } from '../../tasks/domain/Task';
+import { useTaskQueries, useTaskCommands } from '../../tasks/hooks';
+import { Task, ROOT_TASK_ID } from '../../tasks/domain';
 
 interface DatabaseDiagnosticsProps {
   db: PouchDB.Database;
@@ -52,7 +52,8 @@ const statLabelStyle = css`
 `;
 
 export const DatabaseDiagnostics: React.FC<DatabaseDiagnosticsProps> = ({ db }) => {
-  const { getRootTasks, createTask } = useTaskHooks();
+  const { getRootTasks } = useTaskQueries();
+  const { createTask } = useTaskCommands();
   const [dbInfo, setDbInfo] = useState<{ adapter?: string; doc_count?: number } | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [checkingDb, setCheckingDb] = useState(false);
@@ -102,8 +103,10 @@ export const DatabaseDiagnostics: React.FC<DatabaseDiagnosticsProps> = ({ db }) 
   const createSampleRootTask = async () => {
     setTasksDiagError(null);
     try {
-      const sample = new Task(`Sample Task ${new Date().toLocaleTimeString()}`);
-      await createTask(sample, ROOT_ID);
+      await createTask({
+        text: `Sample Task ${new Date().toLocaleTimeString()}`,
+        parentId: ROOT_TASK_ID,
+      });
       await listRootTasks();
     } catch (e: any) {
       setTasksDiagError(e?.message || String(e));

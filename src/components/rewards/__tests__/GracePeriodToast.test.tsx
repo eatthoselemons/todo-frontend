@@ -4,15 +4,6 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { GracePeriodToast } from '../../../features/rewards/components/GracePeriodToast';
-import { Task, BaseState } from '../../../features/tasks/domain/Task';
-
-// Mock task helper
-const createMockTask = (id: string, text: string): Task => ({
-  id,
-  text,
-  internalState: BaseState.IN_PROGRESS,
-  nextState: jest.fn(),
-} as any);
 
 describe('GracePeriodToast', () => {
   beforeEach(() => {
@@ -25,9 +16,8 @@ describe('GracePeriodToast', () => {
   });
 
   it('should render toast when toasts are provided', () => {
-    const task = createMockTask('task-1', 'Test task');
     const toasts = [
-      { id: 'toast-1', task, message: '"Test task" moving to Done' },
+      { id: 'toast-1', taskId: 'task-1' as any, message: '"Test task" moving to Done' },
     ];
 
     render(
@@ -56,10 +46,9 @@ describe('GracePeriodToast', () => {
 
   it('should call onUndo when undo button is clicked', async () => {
     const user = userEvent.setup({ delay: null });
-    const task = createMockTask('task-1', 'Test task');
     const onUndo = jest.fn();
     const toasts = [
-      { id: 'toast-1', task, message: '"Test task" moving to Done' },
+      { id: 'toast-1', taskId: 'task-1' as any, message: '"Test task" moving to Done' },
     ];
 
     render(
@@ -81,11 +70,10 @@ describe('GracePeriodToast', () => {
     expect(onUndo).toHaveBeenCalledWith('task-1');
   });
 
-  it('should call onExpire when grace period expires', async () => {
-    const task = createMockTask('task-1', 'Test task');
+  it('should call onExpire after grace period', async () => {
     const onExpire = jest.fn();
     const toasts = [
-      { id: 'toast-1', task, message: '"Test task" moving to Done' },
+      { id: 'toast-1', taskId: 'task-1' as any, message: '"Test task" moving to Done' },
     ];
 
     render(
@@ -108,11 +96,9 @@ describe('GracePeriodToast', () => {
   });
 
   it('should handle multiple toasts correctly', () => {
-    const task1 = createMockTask('task-1', 'Task 1');
-    const task2 = createMockTask('task-2', 'Task 2');
     const toasts = [
-      { id: 'toast-1', task: task1, message: '"Task 1" moving to Done' },
-      { id: 'toast-2', task: task2, message: '"Task 2" moving to Done' },
+      { id: 'toast-1', taskId: 'task-1' as any, message: '"Task 1" moving to Done' },
+      { id: 'toast-2', taskId: 'task-2' as any, message: '"Task 2" moving to Done' },
     ];
 
     render(
@@ -129,13 +115,11 @@ describe('GracePeriodToast', () => {
   });
 
   it('should use functional state update when adding new toasts', () => {
-    const task1 = createMockTask('task-1', 'Task 1');
-    const task2 = createMockTask('task-2', 'Task 2');
     const onExpire = jest.fn();
 
     const { rerender } = render(
       <GracePeriodToast
-        toasts={[{ id: 'toast-1', task: task1, message: '"Task 1" moving to Done' }]}
+        toasts={[{ id: 'toast-1', taskId: 'task-1' as any, message: '"Task 1" moving to Done' }]}
         onUndo={jest.fn()}
         onExpire={onExpire}
       />
@@ -147,8 +131,8 @@ describe('GracePeriodToast', () => {
     rerender(
       <GracePeriodToast
         toasts={[
-          { id: 'toast-1', task: task1, message: '"Task 1" moving to Done' },
-          { id: 'toast-2', task: task2, message: '"Task 2" moving to Done' },
+          { id: 'toast-1', taskId: 'task-1' as any, message: '"Task 1" moving to Done' },
+          { id: 'toast-2', taskId: 'task-2' as any, message: '"Task 2" moving to Done' },
         ]}
         onUndo={jest.fn()}
         onExpire={onExpire}
@@ -161,13 +145,11 @@ describe('GracePeriodToast', () => {
   });
 
   it('should preserve timer state when toast list updates', async () => {
-    const task1 = createMockTask('task-1', 'Task 1');
-    const task2 = createMockTask('task-2', 'Task 2');
     const onExpire = jest.fn();
 
     const { rerender } = render(
       <GracePeriodToast
-        toasts={[{ id: 'toast-1', task: task1, message: '"Task 1" moving to Done' }]}
+        toasts={[{ id: 'toast-1', taskId: 'task-1' as any, message: '"Task 1" moving to Done' }]}
         onUndo={jest.fn()}
         onExpire={onExpire}
       />
@@ -182,8 +164,8 @@ describe('GracePeriodToast', () => {
     rerender(
       <GracePeriodToast
         toasts={[
-          { id: 'toast-1', task: task1, message: '"Task 1" moving to Done' },
-          { id: 'toast-2', task: task2, message: '"Task 2" moving to Done' },
+          { id: 'toast-1', taskId: 'task-1' as any, message: '"Task 1" moving to Done' },
+          { id: 'toast-2', taskId: 'task-2' as any, message: '"Task 2" moving to Done' },
         ]}
         onUndo={jest.fn()}
         onExpire={onExpire}
@@ -205,9 +187,8 @@ describe('GracePeriodToast', () => {
   });
 
   it('should update countdown timer correctly', () => {
-    const task = createMockTask('task-1', 'Test task');
     const toasts = [
-      { id: 'toast-1', task, message: '"Test task" moving to Done' },
+      { id: 'toast-1', taskId: 'task-1' as any, message: '"Test task" moving to Done' },
     ];
 
     render(
@@ -239,14 +220,11 @@ describe('GracePeriodToast', () => {
   });
 
   it('should handle rapid toast additions without losing state', () => {
-    const task1 = createMockTask('task-1', 'Task 1');
-    const task2 = createMockTask('task-2', 'Task 2');
-    const task3 = createMockTask('task-3', 'Task 3');
     const onExpire = jest.fn();
 
     const { rerender } = render(
       <GracePeriodToast
-        toasts={[{ id: 'toast-1', task: task1, message: 'Task 1' }]}
+        toasts={[{ id: 'toast-1', taskId: 'task-1' as any, message: 'Task 1' }]}
         onUndo={jest.fn()}
         onExpire={onExpire}
       />
@@ -256,8 +234,8 @@ describe('GracePeriodToast', () => {
     rerender(
       <GracePeriodToast
         toasts={[
-          { id: 'toast-1', task: task1, message: 'Task 1' },
-          { id: 'toast-2', task: task2, message: 'Task 2' },
+          { id: 'toast-1', taskId: 'task-1' as any, message: 'Task 1' },
+          { id: 'toast-2', taskId: 'task-2' as any, message: 'Task 2' },
         ]}
         onUndo={jest.fn()}
         onExpire={onExpire}
@@ -267,9 +245,9 @@ describe('GracePeriodToast', () => {
     rerender(
       <GracePeriodToast
         toasts={[
-          { id: 'toast-1', task: task1, message: 'Task 1' },
-          { id: 'toast-2', task: task2, message: 'Task 2' },
-          { id: 'toast-3', task: task3, message: 'Task 3' },
+          { id: 'toast-1', taskId: 'task-1' as any, message: 'Task 1' },
+          { id: 'toast-2', taskId: 'task-2' as any, message: 'Task 2' },
+          { id: 'toast-3', taskId: 'task-3' as any, message: 'Task 3' },
         ]}
         onUndo={jest.fn()}
         onExpire={onExpire}
@@ -283,14 +261,11 @@ describe('GracePeriodToast', () => {
   });
 
   it('should handle toast removal from props', () => {
-    const task1 = createMockTask('task-1', 'Task 1');
-    const task2 = createMockTask('task-2', 'Task 2');
-
     const { rerender } = render(
       <GracePeriodToast
         toasts={[
-          { id: 'toast-1', task: task1, message: 'Task 1' },
-          { id: 'toast-2', task: task2, message: 'Task 2' },
+          { id: 'toast-1', taskId: 'task-1' as any, message: 'Task 1' },
+          { id: 'toast-2', taskId: 'task-2' as any, message: 'Task 2' },
         ]}
         onUndo={jest.fn()}
         onExpire={jest.fn()}
@@ -303,7 +278,7 @@ describe('GracePeriodToast', () => {
     // Remove first toast from props
     rerender(
       <GracePeriodToast
-        toasts={[{ id: 'toast-2', task: task2, message: 'Task 2' }]}
+        toasts={[{ id: 'toast-2', taskId: 'task-2' as any, message: 'Task 2' }]}
         onUndo={jest.fn()}
         onExpire={jest.fn()}
       />

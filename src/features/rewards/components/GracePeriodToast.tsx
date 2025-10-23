@@ -1,19 +1,19 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { css, keyframes } from "@emotion/react";
-import { Task, TaskID } from "../../tasks/domain/Task";
+import { TaskId } from "../../tasks/domain";
 
 interface ToastItem {
   id: string;
-  task: Task;
+  taskId: TaskId;
   message: string;
   timeRemaining?: number;
 }
 
 interface GracePeriodToastProps {
   toasts: ToastItem[];
-  onUndo: (taskId: TaskID) => void;
-  onExpire: (taskId: TaskID) => void;
+  onUndo: (taskId: TaskId) => void;
+  onExpire: (taskId: TaskId) => void;
 }
 
 const slideIn = keyframes`
@@ -168,7 +168,7 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
             if (newTime <= 0) {
               // Time's up, trigger expiry
               const timeoutId = setTimeout(() => {
-                onExpireRef.current(toast.task.id);
+                onExpireRef.current(toast.taskId);
                 setExitingToasts(prev => {
                   const next = new Set(prev);
                   next.delete(id);
@@ -201,7 +201,7 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
     };
   }, [localToasts.size]); // Only depend on size, not the entire map
 
-  const handleUndo = useCallback((id: string, taskId: TaskID) => {
+  const handleUndo = useCallback((id: string, taskId: TaskId) => {
     setExitingToasts(prev => new Set(prev).add(id));
     const timeoutId = setTimeout(() => {
       onUndo(taskId);
@@ -234,7 +234,7 @@ export const GracePeriodToast: React.FC<GracePeriodToastProps> = ({
           </div>
           <button
             css={undoButton}
-            onClick={() => handleUndo(toast.id, toast.task.id)}
+            onClick={() => handleUndo(toast.id, toast.taskId)}
           >
             Undo
           </button>

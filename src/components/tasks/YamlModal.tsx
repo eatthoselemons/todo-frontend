@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Task } from "../../domain/Task";
+import { Task } from "../../features/tasks/domain";
 import { useYamlExport } from "../../features/tasks/hooks/useYamlExport";
 import { YamlEditor, YamlEditorRef } from "../editor/YamlEditor";
 

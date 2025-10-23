@@ -1,8 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
-import { Task, BaseState } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { Task, NotStarted, InProgress, Blocked, Done, getNextState } from "../../features/tasks/domain";
+import { useTaskQueries } from "../../features/tasks/hooks/useTaskQueries";
+import { useTaskCommands } from "../../features/tasks/hooks/useTaskCommands";
 import { AddTaskModal } from "./AddTaskModal";
 import { YamlModal } from "./YamlModal";
 import { SparkleAnimation } from "../effects/SparkleAnimation";
@@ -54,7 +55,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const [sparklePos, setSparklePos] = useState({ x: 0, y: 0 });
-  const { updateTask, deleteTask } = useTaskHooks();
+  const { transitionTaskState } = useTaskCommands();
+  const { deleteTask } = useTaskCommands();
   const { settings, emit, progress } = useRewardsContext();
 
   // Memoized computations
@@ -75,26 +77,29 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   }, [task.dueDate]);
 
   const statusLabel = useMemo(() => {
-    switch (task.internalState) {
-      case BaseState.NOT_STARTED: return "Not started";
-      case BaseState.IN_PROGRESS: return "In progress";
-      case BaseState.BLOCKED: return "Blocked";
-      case BaseState.DONE: return "Done";
+    switch (task.state._tag) {
+      case "NotStarted": return "Not started";
+      case "InProgress": return "In progress";
+      case "Blocked": return "Blocked";
+      case "Done": return "Done";
       default: return "Not started";
     }
-  }, [task.internalState]);
+  }, [task.state._tag]);
 
   const stateClass = useMemo(() =>
-    task.internalState !== BaseState.NOT_STARTED ? `is-${task.internalState}` : "",
-    [task.internalState]
+    task.state._tag !== "NotStarted" ? `is-${task.state._tag.toLowerCase()}` : "",
+    [task.state._tag]
   );
 
   const handleStatusClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
-    const previousState = task.internalState;
-    task.nextState();
+    const previousState = task.state._tag;
+    const nextState = getNextState(task.state);
+
+    // Transition to next state
+    const updatedTask = await transitionTaskState(task.id, nextState);
 
     // Emit theme event when task is completed
-    if (task.internalState === BaseState.DONE && settings.enabled) {
+    if (updatedTask.state._tag === "Done" && settings.enabled) {
       const rect = e.currentTarget.getBoundingClientRect();
       const rowElement = e.currentTarget.closest('.node-row') as HTMLElement;
 
@@ -136,14 +141,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     }
 
     // Check if task is being marked as done and it's a root task
-    if (task.internalState === BaseState.DONE && depth === 0 && onTaskComplete) {
+    if (updatedTask.state._tag === "Done" && depth === 0 && onTaskComplete) {
       // Trigger grace period instead of immediate update
-      onTaskComplete(task);
-    } else {
-      // Normal update for non-root or non-complete transitions
-      await updateTask(task);
+      onTaskComplete(updatedTask);
     }
-  }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, emit, progress]);
+  }, [task.id, task.state, transitionTaskState, depth, onTaskComplete, onMilestone, settings.enabled, emit, progress, hasChildren]);
 
   const handleDelete = useCallback(async () => {
     if (window.confirm(`Delete "${task.text}" and all its children?`)) {
@@ -169,7 +171,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             {hasChildren ? (isExpanded ? "▾" : "▸") : ""}
           </div>
           <div
-            className={`status-chip status-${task.internalState}`}
+            className={`status-chip status-${task.state._tag.toLowerCase()}`}
             onClick={handleStatusClick}
             title="Click to cycle status"
           >
@@ -196,7 +198,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       </div>
 
       <AddTaskModal
-        parentTaskId={task.id}
+        parentTaskId={task.id as any}
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
       />

@@ -1,13 +1,13 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState } from "react";
 import { css } from "@emotion/react";
-import { TaskID } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { TaskId } from "../../features/tasks/domain/ValueObjects";
+import { useTaskCommands } from "../../features/tasks/hooks/useTaskCommands";
 
 interface MenuModalProps {
   showMenuModal: boolean;
   setShowMenuModal: React.Dispatch<React.SetStateAction<boolean>>;
-  taskId: TaskID;
+  taskId: TaskId;
   onClose?: () => void;
 }
 
@@ -80,7 +80,7 @@ export const MenuModal: React.FC<MenuModalProps> = ({
   taskId,
   onClose,
 }) => {
-  const { clearSubTasks } = useTaskHooks();
+  const { clearSubtasks } = useTaskCommands();
   const [error, setError] = useState<string | null>(null);
 
   const close = () => {
@@ -91,7 +91,7 @@ export const MenuModal: React.FC<MenuModalProps> = ({
   const submit = async () => {
     try {
       setError(null);
-      await clearSubTasks(taskId);
+      await clearSubtasks(taskId);
     } catch (e) {
       const msg = (e as any)?.message || String(e);
       setError(msg || 'Failed to clear subtasks');

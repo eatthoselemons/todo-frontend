@@ -2,11 +2,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { css } from "@emotion/react";
 import TreeNode from "./TreeNode";
-import { Task, TaskID } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { Task, TaskId } from "../../features/tasks/domain";
+import { useTaskQueries } from "../../features/tasks/hooks/useTaskQueries";
 
 interface TreeViewProps {
-  rootTaskIds: TaskID[];
+  rootTaskIds: TaskId[];
   expandAllTrigger?: number;
   collapseAllTrigger?: number;
   expandToLevelTrigger?: {level: number, trigger: number} | null;
@@ -42,14 +42,14 @@ const TreeView: React.FC<TreeViewProps> = ({
   onTaskComplete,
   onMilestone
 }) => {
-  const [tasks, setTasks] = useState<Map<TaskID, Task>>(new Map());
-  const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
+  const [tasks, setTasks] = useState<Map<TaskId, Task>>(new Map());
+  const [children, setChildren] = useState<Map<TaskId, TaskId[]>>(new Map());
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allTasksLoaded, setAllTasksLoaded] = useState(false);
-  const { getTaskById, getImmediateChildren } = useTaskHooks();
+  const { getTask, getImmediateChildren } = useTaskQueries();
 
   // Memoized toggle function with dynamic child loading for lazy mode
-  const toggleExpand = useCallback(async (taskId: TaskID) => {
+  const toggleExpand = useCallback(async (taskId: TaskId) => {
     const isCurrentlyExpanded = expanded[taskId];
 
     // Only load dynamically if using lazy strategy
@@ -65,7 +65,7 @@ const TreeView: React.FC<TreeViewProps> = ({
           const newChildren = new Map(children);
 
           for (const childId of taskChildren) {
-            const childTask = await getTaskById(childId);
+            const childTask = await getTask(childId);
             if (childTask) {
               newTasks.set(childId, childTask);
               const grandChildren = await getImmediateChildren(childId);
@@ -83,17 +83,17 @@ const TreeView: React.FC<TreeViewProps> = ({
       ...prev,
       [taskId]: !prev[taskId],
     }));
-  }, [expanded, children, tasks, getTaskById, getImmediateChildren, loadStrategy]);
+  }, [expanded, children, tasks, getTask, getImmediateChildren, loadStrategy]);
 
   useEffect(() => {
     if (expandAllTrigger && expandAllTrigger > 0) {
       const loadAllTasksRecursively = async () => {
-        const taskMap = new Map<TaskID, Task>();
-        const childrenMap = new Map<TaskID, TaskID[]>();
+        const taskMap = new Map<TaskId, Task>();
+        const childrenMap = new Map<TaskId, TaskId[]>();
         const expandedMap: ExpandedState = {};
 
-        const loadRecursive = async (taskId: TaskID) => {
-          const task = await getTaskById(taskId);
+        const loadRecursive = async (taskId: TaskId) => {
+          const task = await getTask(taskId);
           if (task) {
             taskMap.set(taskId, task);
             expandedMap[taskId] = true;
@@ -113,7 +113,7 @@ const TreeView: React.FC<TreeViewProps> = ({
 
       loadAllTasksRecursively();
     }
-  }, [expandAllTrigger, rootTaskIds, getTaskById, getImmediateChildren]);
+  }, [expandAllTrigger, rootTaskIds, getTask, getImmediateChildren]);
 
   useEffect(() => {
     if (collapseAllTrigger && collapseAllTrigger > 0) {
@@ -124,12 +124,12 @@ const TreeView: React.FC<TreeViewProps> = ({
   useEffect(() => {
     if (expandToLevelTrigger && expandToLevelTrigger.trigger > 0) {
       const loadAndExpandToLevel = async () => {
-        const taskMap = new Map<TaskID, Task>();
-        const childrenMap = new Map<TaskID, TaskID[]>();
+        const taskMap = new Map<TaskId, Task>();
+        const childrenMap = new Map<TaskId, TaskId[]>();
         const newExpanded: ExpandedState = {};
 
-        const loadRecursive = async (taskId: TaskID, currentLevel: number) => {
-          const task = await getTaskById(taskId);
+        const loadRecursive = async (taskId: TaskId, currentLevel: number) => {
+          const task = await getTask(taskId);
           if (task) {
             taskMap.set(taskId, task);
             const taskChildren = await getImmediateChildren(taskId);
@@ -143,7 +143,7 @@ const TreeView: React.FC<TreeViewProps> = ({
             } else if (currentLevel === expandToLevelTrigger.level - 1) {
               // Load immediate children at the target level so expand buttons work
               for (const childId of childIds) {
-                const childTask = await getTaskById(childId);
+                const childTask = await getTask(childId);
                 if (childTask) {
                   taskMap.set(childId, childTask);
                   const grandChildren = await getImmediateChildren(childId);
@@ -164,16 +164,16 @@ const TreeView: React.FC<TreeViewProps> = ({
 
       loadAndExpandToLevel();
     }
-  }, [expandToLevelTrigger, rootTaskIds, getTaskById, getImmediateChildren]);
+  }, [expandToLevelTrigger, rootTaskIds, getTask, getImmediateChildren]);
 
   useEffect(() => {
     const loadTasks = async () => {
-      const taskMap = new Map<TaskID, Task>();
-      const childrenMap = new Map<TaskID, TaskID[]>();
+      const taskMap = new Map<TaskId, Task>();
+      const childrenMap = new Map<TaskId, TaskId[]>();
       const currentExpanded = expanded;
 
-      const loadTaskAndChildren = async (taskId: TaskID, depth: number = 0) => {
-        const task = await getTaskById(taskId);
+      const loadTaskAndChildren = async (taskId: TaskId, depth: number = 0) => {
+        const task = await getTask(taskId);
         if (task) {
           taskMap.set(taskId, task);
           const taskChildren = await getImmediateChildren(taskId);
@@ -204,10 +204,10 @@ const TreeView: React.FC<TreeViewProps> = ({
     };
 
     loadTasks();
-  }, [rootTaskIds, getTaskById, getImmediateChildren, loadStrategy]);
+  }, [rootTaskIds, getTask, getImmediateChildren, loadStrategy]);
 
   // Memoize render function for better performance
-  const renderTask = useCallback((taskId: TaskID, depth: number = 0): React.ReactNode => {
+  const renderTask = useCallback((taskId: TaskId, depth: number = 0): React.ReactNode => {
     const task = tasks.get(taskId);
     if (!task) return null;
 

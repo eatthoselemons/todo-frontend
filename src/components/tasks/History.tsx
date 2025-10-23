@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Task } from "../../domain/Task";
-import useTaskHooks from "../../features/tasks/hooks/useTaskHooks";
+import { Task } from "../../features/tasks/domain/TaskEntity";
+import { useTaskQueries } from "../../features/tasks/hooks/useTaskQueries";
 
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -12,7 +12,7 @@ interface DayStats {
 
 const History: React.FC = () => {
   const [weekStats, setWeekStats] = useState<DayStats[]>([]);
-  const { getAllTasks } = useTaskHooks();
+  const { getAllTasks } = useTaskQueries();
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -31,15 +31,15 @@ const History: React.FC = () => {
         let finished = 0;
 
         allTasks.forEach((task) => {
-          if (task.changeLog && task.changeLog.length > 0) {
-            task.changeLog.forEach((change) => {
-              const changeDate = new Date(change.time);
+          if (task.history && task.history.length > 0) {
+            task.history.forEach((change) => {
+              const changeDate = new Date(change.timestamp);
               changeDate.setHours(0, 0, 0, 0);
 
               if (changeDate.getTime() === dateTime) {
-                if (change.newState === "in_progress") {
+                if (change.newState._tag === "InProgress") {
                   started++;
-                } else if (change.newState === "done") {
+                } else if (change.newState._tag === "Done") {
                   finished++;
                 }
               }
@@ -58,7 +58,7 @@ const History: React.FC = () => {
     };
 
     loadHistory();
-  }, []);
+  }, [getAllTasks]);
 
   const maxCount = Math.max(
     ...weekStats.map((s) => Math.max(s.started, s.finished)),
