@@ -87,46 +87,6 @@ export class TaskCommandService extends Effect.Service<TaskCommandService>()(
 ) {}
 ```
 
-### 3. No Void Returns on Operations That Can Error
-
-**DON'T:**
-```typescript
-// ❌ WRONG - Can fail, but returns void
-save(task: Task): Effect.Effect<void, DbError>
-```
-
-**DO:**
-```typescript
-// ✅ CORRECT - Returns Effect even if result is void
-save(task: Task): Effect.Effect<void, DbError>  // Still Effect!
-```
-
-The key: wrap in `Effect` so errors are typed and handleable.
-
-### 4. Schema-First Approach
-
-Always define Schema first, then extract the type.
-
-```typescript
-// 1. Define Schema
-export const TaskTextSchema = Schema.String.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(500),
-  Schema.brand("TaskText")
-);
-
-// 2. Extract type
-export type TaskText = Schema.Schema.Type<typeof TaskTextSchema>;
-
-// 3. Create constructor
-export const makeTaskText = Schema.decodeUnknownSync(TaskTextSchema);
-
-// 4. Optional: unsafe constructor for constants
-export const unsafeTaskText = (v: string) => v as TaskText;
-```
-
----
-
 ## Tagged Error Handling
 
 ### ❌ DON'T: Throw generic errors
@@ -150,24 +110,12 @@ const validateTask = (data: unknown): Effect.Effect<Task, Error> => {
 
 ### ✅ DO: Use tagged error classes
 
-Always create tagged error classes with discriminated `_tag` property.
 
 ```typescript
-// ✅ GOOD - Tagged errors with _tag for pattern matching
-export class ValidationError {
-  readonly _tag = "ValidationError";  // ✅ Required for Effect.catchTag
-  constructor(readonly message: string) {}
-}
+class ValidationError extends Data.TaggedError("ValidationError")<{
+  message: string
+}> {}
 
-export class NotFoundError {
-  readonly _tag = "NotFoundError";
-  constructor(readonly id: string) {}
-}
-
-export class DbError {
-  readonly _tag = "DbError";
-  constructor(readonly cause: unknown, readonly operation?: string) {}
-}
 
 // Use Effect.fail instead of throw
 const validateTask = (data: unknown): Effect.Effect<Task, ValidationError> => {
@@ -236,7 +184,7 @@ const good = () => {
 
 ### DEFAULT: Always use pipe
 
-**Golden Rule: Use `pipe` everywhere by default. Only use `Effect.gen` when pipe would create nested pipes.**
+**Golden Rule: Use `pipe` everywhere by default. Remember to use effects `do` notation
 
 ### ✅ Use pipe for linear chains
 
@@ -304,82 +252,18 @@ const complexOperation = (id: TaskId) =>
 ### ✅ EXCEPTION: Use Effect.gen to flatten nested pipes
 
 ```typescript
-// ✅ GOOD - Effect.gen flattens complex nested operations
-const complexOperation = (id: TaskId) =>
-  Effect.gen(function* () {
-    // Sequential operations with yield*
-    const task = yield* repo.getById(id);
-    const parent = yield* repo.getParent(task.parentId);
-    const children = yield* repo.getChildren(task.id);
-    
-    // Conditional logic is clear
-    const valid = yield* validateHierarchy(parent, task, children);
-    if (!valid) {
-      return yield* Effect.fail(new ValidationError("Invalid hierarchy"));
-    }
-    
-    // More sequential operations
-    yield* updateTask(task);
-    yield* notifyParent(parent);
-    
-    return task;
-  });
+// ✅ GOOD - do syntax flattens complex nested operations
+// TODO
 ```
 
-### Don't forget yield*!
-
-```typescript
-// ❌ BAD - Missing yield*
-Effect.gen(function* () {
-  const task = repo.getById(id);  // ❌ Returns Effect<Task>, not Task!
-  console.log(task.text);  // ❌ Runtime error - task.text doesn't exist
-});
-
-// ✅ GOOD - Always use yield*
-Effect.gen(function* () {
-  const task = yield* repo.getById(id);  // ✅ Unwraps to Task
-  console.log(task.text);  // ✅ Works perfectly
-});
-```
-
-### When to use each
-
-| Situation | Use | Example |
-|-----------|-----|---------|
-| Linear chain (A → B → C) | `pipe` | `pipe(getTask, updateTask, saveTask)` |
-| Simple conditional (1-2 branches) | `pipe` with ternary | `task.done ? succeed : update` |
-| Multiple nested flatMaps (3+) | `Effect.gen` | See complex example above |
-| Loops over effects | `Effect.gen` | `for (const x of arr) yield* process(x)` |
-| Early returns | `Effect.gen` | `if (invalid) return yield* fail(...)` |
-
-### Effect.gen is OK in Layer.effect
-
-```typescript
-// ✅ OK - Effect.gen in Layer.effect is the one place it's encouraged
-export const TaskServiceLive = Layer.effect(
-  TaskService,
-  Effect.gen(function* () {
-    const repo = yield* TaskRepository;  // Get dependency
-    
-    // Define methods using pipe
-    const getTask = (id: TaskId) =>
-      pipe(
-        repo.getById(id),
-        Effect.map(transform)
-      );
-    
-    return { getTask } as const;
-  })
-);
-```
-
----
 
 ## Service Pattern
 
 ### Effect.Service Pattern (Official)
 
 Use the official `Effect.Service` class pattern from the docs.
+
+// TODO convert to do notation
 
 ```typescript
 import { Effect, Layer } from "effect";
@@ -435,6 +319,17 @@ export class TaskQueryService extends Effect.Service<TaskQueryService>()(
 
 ```typescript
 // In application code
+export const updateName = (
+  task: Task, 
+  newName: validName
+): E.Effect<void, TaskError, PouchDBRepositoryLive> =>
+  pipe(
+    PouchDBRepositoryLive,
+    E.tap((db) => db.create({...task, name: newName})), // the output is still the dep
+    E.tap((db) => db.sync()), // the output is still the dep
+    E.asVoid, // discarding all and returning void
+  );
+
 const program = Effect.gen(function* () {
   const queries = yield* TaskQueryService;
   const tasks = yield* queries.getAllTasks();
@@ -472,7 +367,6 @@ interface TaskRepository {
 }
 ```
 
-**Service = Business Logic + Orchestration**
 ```typescript
 class TaskCommandService {
   createTask(params) {
