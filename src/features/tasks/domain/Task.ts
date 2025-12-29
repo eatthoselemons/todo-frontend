@@ -26,6 +26,8 @@ export interface Transition {
 }
 
 export interface ITask {
+  _id?: string;
+  _rev?: string;
   text: string;
   internalState: BaseState;
   id: TaskID;
@@ -35,14 +37,21 @@ export interface ITask {
 }
 
 export class Task implements ITask {
+  public _id: string;
+  public _rev?: string;
+
   constructor(
     public text: string,
     public internalState = BaseState.NOT_STARTED,
     public readonly id: TaskID = uuidv4(),
     public path: Array<TaskID> = [],
     public changeLog: Array<Transition> = [],
-    public dueDate?: string
-  ) {}
+    public dueDate?: string,
+    _rev?: string
+  ) {
+    this._id = id;
+    this._rev = _rev;
+  }
 
   get state(): string {
     return this.internalState;
@@ -56,7 +65,15 @@ export class Task implements ITask {
   }
 
   static from(obj: ITask): Task {
-    return new Task(obj.text, obj.internalState, obj.id, obj.path || [], obj.changeLog, obj.dueDate);
+    return new Task(
+      obj.text, 
+      obj.internalState, 
+      obj.id || obj._id, 
+      obj.path || [], 
+      obj.changeLog, 
+      obj.dueDate,
+      obj._rev
+    );
   }
 
   nextState(): void {

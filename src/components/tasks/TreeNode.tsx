@@ -50,6 +50,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onTaskComplete,
   onMilestone,
 }) => {
+  const [, forceUpdate] = useState({});
   const [showYamlModal, setShowYamlModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
@@ -141,6 +142,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       onTaskComplete(task);
     } else {
       // Normal update for non-root or non-complete transitions
+      // Update UI immediately (optimistic update)
+      forceUpdate({});
       await updateTask(task);
     }
   }, [task, updateTask, depth, onTaskComplete, onMilestone, settings.enabled, emit, progress]);
@@ -205,6 +208,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         task={task}
         showModal={showYamlModal}
         setShowModal={setShowYamlModal}
+        onSave={() => forceUpdate({})}
       />
 
       {settings.enabled && settings.animations && (

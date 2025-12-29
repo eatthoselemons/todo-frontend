@@ -8,6 +8,7 @@ interface YamlModalProps {
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
   task: Task;
   onClose?: () => void;
+  onSave?: () => void;
 }
 
 export const YamlModal: React.FC<YamlModalProps> = ({
@@ -15,6 +16,7 @@ export const YamlModal: React.FC<YamlModalProps> = ({
   setShowModal,
   task,
   onClose,
+  onSave,
 }) => {
   const [yamlContent, setYamlContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -66,6 +68,7 @@ export const YamlModal: React.FC<YamlModalProps> = ({
       await importTask(task, currentYaml);
       setSuccessMessage("Task updated successfully!");
       setIsSaving(false);
+      onSave?.();
 
       // Don't auto-close - let user close manually or make more edits
     } catch (err: any) {
