@@ -43,10 +43,11 @@ const TreeView: React.FC<TreeViewProps> = ({
   onMilestone
 }) => {
   const [tasks, setTasks] = useState<Map<TaskID, Task>>(new Map());
+  
   const [children, setChildren] = useState<Map<TaskID, TaskID[]>>(new Map());
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allTasksLoaded, setAllTasksLoaded] = useState(false);
-  const { getTaskById, getImmediateChildren } = useTaskHooks();
+  const { getTaskById, getImmediateChildren, getAllTasks } = useTaskHooks();
 
   // Memoized toggle function with dynamic child loading for lazy mode
   const toggleExpand = useCallback(async (taskId: TaskID) => {
@@ -168,43 +169,59 @@ const TreeView: React.FC<TreeViewProps> = ({
 
   useEffect(() => {
     const loadTasks = async () => {
-      const taskMap = new Map<TaskID, Task>();
-      const childrenMap = new Map<TaskID, TaskID[]>();
-      const currentExpanded = expanded;
+      if (loadStrategy === 'full') {
+        const allTasks = await getAllTasks();
+        const taskMap = new Map<TaskID, Task>();
+        const childrenMap = new Map<TaskID, TaskID[]>();
 
-      const loadTaskAndChildren = async (taskId: TaskID, depth: number = 0) => {
-        const task = await getTaskById(taskId);
-        if (task) {
-          taskMap.set(taskId, task);
-          const taskChildren = await getImmediateChildren(taskId);
-          const childIds = taskChildren.map((t) => t.id);
-          childrenMap.set(taskId, childIds);
+        for (const task of allTasks) {
+          taskMap.set(task.id, task);
 
-          if (loadStrategy === 'full') {
-            // For 'full' strategy, load everything recursively
-            await Promise.all(childIds.map(childId => loadTaskAndChildren(childId, depth + 1)));
-          } else {
-            // For 'lazy' strategy, load based on expansion state
+          if (task.path.length > 1) {
+            const parentId = task.path[task.path.length - 2];
+
+            if (!childrenMap.has(parentId)) {
+              childrenMap.set(parentId, []);
+            }
+            childrenMap.get(parentId)?.push(task.id);
+          }
+        }
+
+        for (const list of childrenMap.values()) {
+          list.sort();
+        }
+
+        setTasks(taskMap);
+        setChildren(childrenMap);
+        setAllTasksLoaded(true);
+      } else {
+        const taskMap = new Map<TaskID, Task>();
+        const childrenMap = new Map<TaskID, TaskID[]>();
+        const currentExpanded = expanded;
+
+        const loadTaskAndChildren = async (taskId: TaskID, depth: number = 0) => {
+          const task = await getTaskById(taskId);
+          if (task) {
+            taskMap.set(taskId, task);
+            const taskChildren = await getImmediateChildren(taskId);
+            const childIds = taskChildren.map((t) => t.id);
+            childrenMap.set(taskId, childIds);
+
             // Always load immediate children (depth 1) so expand buttons work
             if (depth === 0 || currentExpanded[taskId] || allTasksLoaded) {
               await Promise.all(childIds.map(childId => loadTaskAndChildren(childId, depth + 1)));
             }
           }
-        }
-      };
+        };
 
-      await Promise.all(rootTaskIds.map(taskId => loadTaskAndChildren(taskId, 0)));
-      setTasks(taskMap);
-      setChildren(childrenMap);
-
-      // If full load strategy, mark all tasks as loaded
-      if (loadStrategy === 'full') {
-        setAllTasksLoaded(true);
+        await Promise.all(rootTaskIds.map(taskId => loadTaskAndChildren(taskId, 0)));
+        setTasks(taskMap);
+        setChildren(childrenMap);
       }
     };
 
     loadTasks();
-  }, [rootTaskIds, getTaskById, getImmediateChildren, loadStrategy]);
+  }, [rootTaskIds, getTaskById, getImmediateChildren, getAllTasks, loadStrategy]);
 
   // Memoize render function for better performance
   const renderTask = useCallback((taskId: TaskID, depth: number = 0): React.ReactNode => {

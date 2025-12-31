@@ -12,15 +12,21 @@ export const TaskContextProvider: React.FC<
   PropsWithChildren<TaskContextProviderProps>
 > = ({
   children,
-  db = new PouchDB<ITask>("tasks"),
+  db,
 }) => {
   // Expose for debugging/verification in browser console (dev only)
   if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
     // @ts-ignore
     (window as any).__pouchdb = db;
   }
+  const dbRef = React.useRef<PouchDB.Database<ITask> | undefined>(undefined);
+  
+  if (!dbRef.current) {
+    dbRef.current = db || new PouchDB<ITask>("tasks");
+  }
+
   return (
-    <TaskContext.Provider value={{ db }}>
+    <TaskContext.Provider value={{ db: dbRef.current }}>
       {children}
     </TaskContext.Provider>
   );

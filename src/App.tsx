@@ -15,6 +15,7 @@ import { useRewardsContext } from "./features/rewards/context/RewardsContext";
 import ThemeEffectsHost from "./features/rewards/components/ThemeEffectsHost";
 import AdvancedThreeEffectsHost from "./features/rewards/components/AdvancedThreeEffectsHost";
 import "./styles/app.css";
+import { debounce } from "debounce";
 
 const App: React.FC = () => {
   const [taskIds, setTaskIds] = useState<TaskID[]>([]);
@@ -135,32 +136,39 @@ const App: React.FC = () => {
   }, [getRootTaskIds, getTaskById]);
 
   useEffect(() => {
+    const refreshTasks = debounce(async () => {
+      const allTaskIds = await getRootTaskIds();
+      const activeTasks: TaskID[] = [];
+      const doneTasks: TaskID[] = [];
+
+      for (const taskId of allTaskIds) {
+        const task = await getTaskById(taskId);
+        if (task) {
+          if (task.internalState === BaseState.DONE) {
+            doneTasks.push(taskId);
+          } else {
+            activeTasks.push(taskId);
+          }
+        }
+      }
+
+      setTaskIds(activeTasks);
+      setDoneTaskIds(doneTasks);
+    }, 200);
+
     const changes = db
       .changes({
         since: "now",
         live: true,
       })
-      .on("change", async () => {
-        const allTaskIds = await getRootTaskIds();
-        const activeTasks: TaskID[] = [];
-        const doneTasks: TaskID[] = [];
-
-        for (const taskId of allTaskIds) {
-          const task = await getTaskById(taskId);
-          if (task) {
-            if (task.internalState === BaseState.DONE) {
-              doneTasks.push(taskId);
-            } else {
-              activeTasks.push(taskId);
-            }
-          }
-        }
-
-        setTaskIds(activeTasks);
-        setDoneTaskIds(doneTasks);
+      .on("change", () => {
+        refreshTasks();
       });
 
-    return () => changes.cancel();
+    return () => {
+      changes.cancel();
+      refreshTasks.clear();
+    };
   }, [db, getRootTaskIds, getTaskById]);
 
   return (

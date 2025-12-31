@@ -81,7 +81,7 @@ const useTaskHooks = () => {
 
     async function createTask(
       task: Task,
-      parentId: TaskID = ROOT_ID
+      parentOrId: Task | TaskID = ROOT_ID
     ): Promise<string> {
       await ensureRootExists();
 
@@ -90,41 +90,68 @@ const useTaskHooks = () => {
       }
 
       // Get parent to build path
-      const parent = Task.from(await db.get(parentId));
+      let parent: Task;
+      if (typeof parentOrId === 'string') {
+        parent = Task.from(await db.get(parentOrId));
+      } else {
+        parent = parentOrId;
+      }
 
       // Set the path for the new task (parent's path + task's own id)
       task.path = [...parent.path, task.id];
 
       // Save new task
-      await db.put({ _id: task.id, type: 'task', ...task } as any);
+      const response = await db.put({ _id: task.id, type: 'task', ...task } as any);
+      if (response.ok) {
+        task._rev = response.rev;
+      }
 
       return task.id;
     }
 
     async function updateTask(task: Task): Promise<void> {
-      await db.put({ ...(await db.get(task.id)), ...task });
+      try {
+        if (task._rev) {
+          const response = await db.put({
+            _id: task.id,
+            type: 'task',
+            ...task
+          });
+          if (response.ok) {
+            task._rev = response.rev;
+          }
+        } else {
+          // Fallback if no _rev (fetch first)
+          const current = await db.get(task.id);
+          const response = await db.put({ ...current, ...task });
+          if (response.ok) {
+            task._rev = response.rev;
+          }
+        }
+      } catch (err: any) {
+        if (err.status === 409) {
+          // Conflict: fetch latest and retry
+          const current = await db.get(task.id);
+          const response = await db.put({
+             ...current,
+             ...task,
+             _id: task.id,
+             type: 'task'
+          });
+          if (response.ok) {
+            task._rev = response.rev;
+          }
+        } else {
+          throw err;
+        }
+      }
     }
 
     async function deleteTask(id: TaskID) {
       if (id === ROOT_ID) {
         throw new Error("Cannot delete root task");
       }
-
-      try {
-        await db.get(id);
-      } catch (error) {
-        throw new Error(`Task with id ${id} does not exist`);
-      }
-
-      // Get all descendants
-      const descendants = await getSubtree(id);
-
-      // Delete the task and all descendants
-      const toDelete = [id, ...descendants.map(d => d.id)];
-      await Promise.all(toDelete.map(async (taskId) => {
-        const task = await db.get(taskId);
-        await db.remove(task);
-      }));
+      await deleteTasks([id]);
     }
 
     async function moveTask(
@@ -133,6 +160,8 @@ const useTaskHooks = () => {
     ): Promise<void> {
       // Get all descendants that need path updates
       const descendants = await getSubtree(childTask.id);
+      
+      const updates: Task[] = [];
 
       // Calculate new path for the moved task
       const newPath = [...newParentTask.path, childTask.id];
@@ -140,15 +169,17 @@ const useTaskHooks = () => {
 
       // Update the moved task's path
       childTask.path = newPath;
-      await updateTask(childTask);
+      updates.push(childTask);
 
       // Update all descendants' paths
-      await Promise.all(descendants.map(async (descendant) => {
+      descendants.forEach((descendant) => {
         // Keep the relative path after the moved node
         const relativePath = descendant.path.slice(oldPathLength);
         descendant.path = [...newPath, ...relativePath];
-        await updateTask(descendant);
-      }));
+        updates.push(descendant);
+      });
+
+      await processBulkChanges(updates, []);
     }
 
     async function copyTask(
@@ -172,13 +203,34 @@ const useTaskHooks = () => {
     }
 
     async function deleteTasks(taskIds: Array<TaskID>) {
-      await Promise.all(taskIds.map((key) => deleteTask(key)));
+      const allTasks = await getAllTasks();
+      const toDelete: Task[] = [];
+      const idsToDelete = new Set<TaskID>();
+
+      for (const id of taskIds) {
+        if (id === ROOT_ID) continue;
+        idsToDelete.add(id);
+        
+        // Find descendants
+        const descendants = allTasks.filter(t => t.path.includes(id));
+        descendants.forEach(d => idsToDelete.add(d.id));
+      }
+      
+      // Map IDs back to full Task objects (so we have _rev)
+      idsToDelete.forEach(id => {
+          const task = allTasks.find(t => t.id === id);
+          if (task) {
+              toDelete.push(task);
+          }
+      });
+
+      await processBulkChanges([], toDelete);
     }
 
     async function taskStateChange(id: TaskID, state: BaseState): Promise<void> {
-      const tempTask: ITask = await db.get(id);
-      tempTask.internalState = state;
-      db.put(tempTask);
+      const task = await getTaskById(id);
+      task.internalState = state;
+      await updateTask(task);
     }
 
     async function clearSubTasks(id: TaskID): Promise<void> {
@@ -192,6 +244,72 @@ const useTaskHooks = () => {
         .filter(row => (row.doc as any)?.type === 'task')
         .map(row => Task.from(row.doc as ITask))
         .filter(task => task.id !== ROOT_ID);
+    }
+
+    async function processBulkChanges(
+      toSave: Task[],
+      toDelete: Task[]
+    ): Promise<void> {
+      const bulkDocs = [];
+
+      // Process deletes
+      for (const task of toDelete) {
+        if (task._rev) {
+          bulkDocs.push({
+            _id: task.id,
+            _rev: task._rev,
+            _deleted: true
+          });
+        } else {
+           // Fallback if _rev is missing (should generally be avoided)
+           // We might need to fetch it, but ideally we passed it in
+           console.warn(`Attempting to delete task ${task.id} without _rev`);
+           try {
+             const doc = await db.get(task.id);
+             bulkDocs.push({ ...doc, _deleted: true });
+           } catch (e) {
+             console.error(`Could not find task ${task.id} to delete`, e);
+           }
+        }
+      }
+
+      // Process saves (updates & creates)
+      for (const task of toSave) {
+        const newDoc: any = {
+          _id: task.id,
+          type: 'task',
+          ...task
+        };
+        // Explicitly map _rev if it exists on the object
+        if (task._rev) {
+          newDoc._rev = task._rev;
+        }
+
+        bulkDocs.push(newDoc);
+      }
+
+      if (bulkDocs.length > 0) {
+        const responses = await db.bulkDocs(bulkDocs);
+        
+        // Update _revs on the objects in memory so subsequent saves work
+        // This is crucial for keeping our local state in sync with DB
+        for (let i = 0; i < responses.length; i++) {
+          const response = responses[i];
+          if ('ok' in response && response.ok) {
+             // Find the corresponding task object and update its _rev
+             // We need to match based on id since bulkDocs returns in order? 
+             // bulkDocs returns order matches input order.
+             const isDelete = i < toDelete.length;
+             if (!isDelete) {
+                const saveIndex = i - toDelete.length;
+                const savedTask = toSave[saveIndex];
+                if (savedTask && savedTask.id === response.id) {
+                   savedTask._rev = response.rev;
+                }
+             }
+          }
+        }
+      }
     }
 
     return {
@@ -211,6 +329,7 @@ const useTaskHooks = () => {
       getSubtree,
       getParentId,
       getAllTasks,
+      processBulkChanges,
     };
   }, [db]);
 };
